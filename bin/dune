@@ -1,0 +1,10 @@
+(executable
+ (public_name partition_algebra)
+ (name main)
+ (libraries
+  utils unionFind
+  ))
+
+; (library
+;  (name main)
+;  (libraries unionFind))
