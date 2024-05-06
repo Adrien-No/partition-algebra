@@ -1,2 +1,4 @@
 (test
- (name test_partition_algebra))
+ (name test_partition_algebra)
+ (libraries main)
+)
