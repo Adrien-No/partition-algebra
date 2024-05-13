@@ -52,7 +52,7 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
           -x, make (-x)) (list_init())
     |> List.to_seq |> Hashtbl.of_seq
 
-  let id : t = let h = elem_init true in ignore (UnionFind.union (Hashtbl.find h 2) (Hashtbl.find h 3)); h,
+  let id : t = let h = elem_init true in (* ignore (UnionFind.union (Hashtbl.find h 2) (Hashtbl.find h 3)); *) h,
                List.combine (list_init()) (list_init()) |> List.map (fun (x, y) -> Int x, Int_bar y) |> List.to_seq |> Hashtbl.of_seq, elem_init false
 
   let s_i i : t =
@@ -69,8 +69,8 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
     elem_init true,
     List.init P.k (
       function
-      | j when j = (i-1) -> None
-      | n -> Some (Int n, Int_bar n)
+      | j when (j+1) = i -> None
+      | n -> Some (Int (n+1), Int_bar (n+1))
     ) |> List.filter Option.is_some |> List.map Option.get |> List.to_seq |> Hashtbl.of_seq,
     elem_init false
 
