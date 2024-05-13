@@ -7,5 +7,6 @@ module type P = sig val k : int end
 module Partition = PartitionAlgebra (struct let k = 3 end : P)
 
 let _ =
-  let _s = Partition.b_i 3 in
-  Partition.print _s
+  let s = Partition.s_i 1 in
+  let s' = Partition.s_i 1 in
+  Partition.print (Partition.concat s s')

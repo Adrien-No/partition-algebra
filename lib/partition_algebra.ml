@@ -28,7 +28,7 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
   (* we need int for transition to get b' from a' (and use htbl once with have the index) *)
   (* the snd arg will be updated manually in concat, others should not be directly changed ('a elem can be unioned ) *)
   type t =  (int, int UnionFind.elem) Hashtbl.t *
-            (signed_int,  signed_int) Hashtbl.t *
+            (signed_int,  signed_int) Hashtbl.t * (* we need to sign our int or to have negative index (-k to +k) bc edges are not oriented *)
             (int, int UnionFind.elem) Hashtbl.t
 
   let int_of_signed_int (si: signed_int) =
@@ -114,7 +114,7 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
       (h_a, a_trans, _h_a' : t)
       (h_b, b_trans, h_b' : t) : t =
     (* on suppose que a et b sont de bonne taille *)
-
+    Printf.printf "begin concat\n";
     (* [0] : union les a' / b' *)
 
     (* [1] :  *)
@@ -141,6 +141,7 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
                     let _cl_b' = Hashtbl.find h_b' y' in
                     match find_trans c_trans (Int_bar y') with
                     | None ->
+                      Printf.printf "edge added\n";
                       Hashtbl.add c_trans ant (Int_bar y')
                     (* | Some Int i *) | Some Int i_y ->
                       (* on va remonter jusqu'à l'autre x (de A) qui donne une image dans la même cl de B *)
