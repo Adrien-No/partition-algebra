@@ -156,77 +156,32 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
       | Int i -> i
       | Int_bar i -> -i
 
-  (* let to_graph (diagram: t) = *)
-  (*   let open Draw in *)
-  (*   let convert si = *)
-  (*     match si with *)
-  (*     | Int i -> i *)
-  (*     | Int_bar i -> -i *)
-  (*   in *)
-  (*   let h_a, edges, h_a' = diagram in *)
-  (*     List.fold_left (G.add_vertex) G.empty (list_init() @ (list_init() |> List.map Int.neg)) *)
-  (*     |> Hashtbl.fold (fun key value g -> *)
-  (*         if UnionFind.get value <> key then *)
-  (*           G.add_edge g key (UnionFind.find value |> UnionFind.get) *)
-  (*         else g *)
-  (*       ) h_a *)
-  (*     |> Hashtbl.fold (fun key value g -> *)
-  (*         if UnionFind.get value <> key then *)
-  (*           G.add_edge g key (UnionFind.find value |> UnionFind.get) *)
-  (*         else g *)
-  (*       ) h_a' *)
-  (*     |> Hashtbl.fold (fun key value g -> *)
-  (*         G.add_edge g (convert key) (convert value) *)
-  (*       ) edges *)
-  (*     (\* |> fun g -> G.add_edge g 2 (-3) *\) *)
-
-  let cls_of_uf h : (int UnionFind.elem, int list) Hashtbl.t =
-    (* equivalent classes from uf structure *)
-    (* let construct x = *)
-    (*   if is_node then Draw.Node x else Draw.Node_bar x *)
-    (* in *)
-    let (acc: (int UnionFind.elem, int list) Hashtbl.t) = Hashtbl.create 8 in
-    let rec loop (key: int) (value: int UnionFind.elem)  =
-      let _canonical_v = UnionFind.find value |> UnionFind.get in
-      match Hashtbl.find_opt acc (* canonical_v *)value with
-      | None -> Hashtbl.add acc (* canonical_v *)value ([key])
-      | Some l ->
-        (* le représentant existe déjà *)
-        Hashtbl.replace acc value(* canonical_v *) ((key::l))
+  let to_graph (diagram: t) =
+    let open Draw in
+    let convert si =
+      match si with
+      | Int i -> i
+      | Int_bar i -> -i
     in
-    Hashtbl.iter loop h;
-    acc
-
-  (* let rec int_of_cl = *)
-  (*   function *)
-  (*   | [] -> failwith "empty cl" *)
-  (*   | [x] -> x *)
-  (*   | h::t -> h + 10 * int_of_cl t *)
-
-  let cl_of_int h (n: int) =
-    (* experimental *)
-    let open Draw in
-    (* let escape = *)
-    (* function *)
-    (* Node x -> x *)
-    (* | Node_bar x -> x *)
-    (* in *)
-    h |> Hashtbl.to_seq |> List.of_seq |> List.map snd (* |> List.map escape *) |> List.find (fun l -> List.find_opt ((=) n) l |> Option.is_some)
-
-  let to_graph_class (diagram: t) =
-    let open Draw in
     let h_a, edges, h_a' = diagram in
-    let cl_a, cl_a' = cls_of_uf h_a, cls_of_uf h_a' in
-    let a_nodes = Hashtbl.fold (fun (_cano: int UnionFind.elem) (l: int list) g -> G.add_vertex g (Node l)) cl_a G.empty in
-    let a'_nodes = Hashtbl.fold (fun _cano l g -> G.add_vertex g (Node_bar l)) cl_a' a_nodes in
-    let edges = Hashtbl.fold (fun src dst g ->
-        let x = Node (convert src |> cl_of_int cl_a)
-        and y = Node_bar (convert dst |> cl_of_int cl_a') in
-        G.add_edge g x y) edges a'_nodes in
-    edges
+      List.fold_left (G.add_vertex) G.empty (list_init() @ (list_init() |> List.map Int.neg))
+      |> Hashtbl.fold (fun key value g ->
+          if UnionFind.get value <> key then
+            G.add_edge g key (UnionFind.find value |> UnionFind.get)
+          else g
+        ) h_a
+      |> Hashtbl.fold (fun key value g ->
+          if UnionFind.get value <> key then
+            G.add_edge g key (UnionFind.find value |> UnionFind.get)
+          else g
+        ) h_a'
+      |> Hashtbl.fold (fun key value g ->
+          G.add_edge g (convert key) (convert value)
+        ) edges
+      (* |> fun g -> G.add_edge g 2 (-3) *)
 
   let print (diagram: t) =
-    let g = to_graph_class diagram in
+    let g = to_graph diagram in
     (* let g = Draw.G.add_edge g 2 (-3) in *)
     let file = open_out "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram_test.dot" in
     (* failwith "todo "  *)Draw.Dot.output_graph file g

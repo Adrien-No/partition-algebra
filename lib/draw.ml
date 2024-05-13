@@ -1,12 +1,11 @@
 (* from https://stackoverflow.com/questions/8999557/how-to-visualize-draw-automata-in-ocaml *)
 
-let w_vertex, h_vertex = 30, 15
+let w_vertex, h_vertex = 1, 1.
 
-type node = Node of int list | Node_bar of int list
 (* open Ocamlgraph *)
 (* representation of a node -- must be hashable *)
-module Node : ( Graph.Sig.COMPARABLE with type t = node) = struct
-   type t = node
+module Node = struct
+   type t = int
    let compare = compare
    let hash = Hashtbl.hash
    let equal = (=)
@@ -36,21 +35,21 @@ module Dot = Graph.Graphviz.Neato(struct
 
    (*   [`Shape `Box; `Pos (Printf.sprintf "%i,%i0!" x y)] (\* attributs de position manuelle *\) *)
    let vertex_attributes v =
-     let x, y = (* (abs v) * w_vertex |> float_of_int *)
-       match v with
-       | Node [] -> 0., 1.
-       | Node_bar [] -> 0., 0.
-       | Node (v::_) -> float_of_int v, 1.
-       | Node_bar (v::_) -> float_of_int v, 0.
-       (* float_of_int (abs (v), if v > 0 then 1. else 0. *)
-                (* if v > 0 then 0. else h_vertex |> float_of_int *)
+     let x, y = (abs v) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0.
      in
      [`Shape `Circle; `Pos (x,y)]
-   let vertex_name (v: node) : string =
-     match v with
-     | Node l -> l |> List.map string_of_int |> String.concat ","
-     | Node_bar l -> "_" ^ (l |> List.map string_of_int |> String.concat ",")
+   let vertex_name (v: int) : string = string_of_int v
 
    let default_vertex_attributes _ = []
-  let graph_attributes _ = [`Pagedir `LeftToRight]
+  let graph_attributes _ = [(* `Pagedir `LeftToRight *)]
 end)
+
+let pin_dot (file_name: string) =
+  (* OCaml lib doesn't support adding parameter `!` for pinning (defining permanent pos), so we add it in the .dot file *)
+  let file = open_in_bin file_name in
+  let content = really_input_string file (in_channel_length file) in
+  let new_content = Str.global_replace (Str.regexp "\", s") ("!\", s") content in
+  close_in file;
+  let file = Out_channel.open_bin file_name in
+  Out_channel.output_string file new_content;
+  close_out file
