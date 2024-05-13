@@ -55,36 +55,43 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
   let id : t = let h = elem_init true in (* ignore (UnionFind.union (Hashtbl.find h 2) (Hashtbl.find h 3)); *) h,
                List.combine (list_init()) (list_init()) |> List.map (fun (x, y) -> Int x, Int_bar y) |> List.to_seq |> Hashtbl.of_seq, elem_init false
 
+  let range_test i i_min i_max =
+    if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
+
   let s_i i : t =
+    range_test i 1 (P.k-1);
     elem_init true,
     List.init P.k (
       function
-      | j when j = (i-1) -> (Int i, Int_bar i)
+      | j when j = (i-1) -> (Int i, Int_bar (i+1))
       | j when j = i     -> (Int (i+1), Int_bar i)
       | n -> (Int (n+1), Int_bar (n+1))
     ) |> List.to_seq |> Hashtbl.of_seq,
     elem_init false
 
   let p_i i : t =
+    range_test i 1 P.k;
     elem_init true,
     List.init P.k (
       function
-      | j when (j+1) = i -> None
+      | j when j = i-1 -> None
       | n -> Some (Int (n+1), Int_bar (n+1))
     ) |> List.filter Option.is_some |> List.map Option.get |> List.to_seq |> Hashtbl.of_seq,
     elem_init false
 
   let b_i i : t =
-    elem_init true,
-    (Int i, Int (i+1))
-    :: (Int_bar i, Int_bar (i+1))
-    :: List.init P.k (
+    range_test i 1 (P.k-1);
+    let h_a, h_a' = elem_init true, elem_init false in
+    ignore (UnionFind.union (Hashtbl.find h_a  i) (Hashtbl.find h_a  (i+1)));
+    ignore (UnionFind.union (Hashtbl.find h_a' (-i)) (Hashtbl.find h_a' (- (i+1)))); (* NOTE attention, -1 ("le suivant dans les négatifs") *)
+    h_a,
+    List.init P.k (
       function
       | j when j = (i-1) -> (Int i, Int_bar i)
-      | j when j = i     -> (Int (i+1), Int_bar i)
+      | j when j = i     -> (Int (i+1), Int_bar (i+1))
       | n -> (Int (n+1), Int_bar (n+1))
     ) |> List.to_seq |> Hashtbl.of_seq,
-    elem_init false
+    h_a'
 
   (* let uf_map (a : 'a elem) (f : 'a elem -> 'a elem) = *)
   (*   let rec aux k acc = *)
@@ -187,10 +194,3 @@ module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
     (* failwith "todo "  *)Draw.Dot.output_graph file g
 
 end
-open UnionFind
-
-let z = union (make 2) (make 5)
-
-
-
-let () = print_endline "Hello, World!"

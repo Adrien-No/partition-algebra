@@ -10,7 +10,7 @@
 
 mtest:
 #-Kneato
-	dune test --profile release; dot -Kneato -Tpng img/diagram_test.dot > img/diagram_test.png
+	dune test --profile release #; dot -Kneato -Tpng img/diagram_test.dot > img/diagram_test.png
 
 mbin:
 	make mtest;
