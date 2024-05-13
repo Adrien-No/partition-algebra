@@ -1,0 +1,15 @@
+graph G {
+  pagedir=LR;
+  1 [pos="1.000000,1.000000", shape=circle, ];
+  2 [pos="2.000000,1.000000", shape=circle, ];
+  3 [pos="3.000000,1.000000", shape=circle, ];
+  _-3 [pos="-3.000000,0.000000", shape=circle, ];
+  _-2 [pos="-2.000000,0.000000", shape=circle, ];
+  _-1 [pos="-1.000000,0.000000", shape=circle, ];
+  
+  
+  1 -- _-1 [color="#001267", label="", ];
+  2 -- _-2 [color="#001267", label="", ];
+  3 -- _-3 [color="#001267", label="", ];
+  
+  }
