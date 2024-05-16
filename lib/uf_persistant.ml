@@ -1,5 +1,7 @@
 (* copied from https://www.lri.fr/~filliatr/ftp/publis/puf-wml07.pdf *)
 
+Printexc.record_backtrace true
+
 module type PersistentUnionFind = sig
   type t
 
@@ -7,7 +9,7 @@ module type PersistentUnionFind = sig
 
   val find : t -> int -> int (** [find s x] returns the representative of the equivalence class of x *)
 
-  val union : t -> int -> int -> t (** *)
+  val union : t -> int -> int -> t (** *) (* Question : Is it better to union with the canonical ? -> Yes probably bc it lowers tree height *)
 end
 
 module type PersistentArray = sig
@@ -17,6 +19,7 @@ module type PersistentArray = sig
   val set : 'a t -> int -> 'a -> 'a t
 end
 
+(* crée une structure UF avec des élements entiers positifs *)
 module Make(A : PersistentArray) : PersistentUnionFind = struct
   type t = {
     rank: int A.t;
@@ -80,7 +83,7 @@ module A : PersistentArray = struct
       end
     | Invalid -> assert false
 
-  let rec get (t: 'a t) (i: int) : 'a = match !t with
+  let (* rec  *) get (t: 'a t) (i: int) : 'a = match !t with
     | Arr a -> a.(i)
     | Diff _ ->
       reroot t;
@@ -102,3 +105,34 @@ module A : PersistentArray = struct
     | Diff _ -> assert false
     | Invalid -> assert false
 end
+
+(* crée une structure UF avec des entiers signés non nuls *)
+module Make_signed(A: PersistentArray) : PersistentUnionFind = struct
+  module Uf = Make(A)
+  type t = Uf.t
+
+  let size_n = ref None
+
+  let create n =
+    size_n := Some n; (* need to know n to realise transformationss *)
+    Uf.create (n*2) (* we go from [-n; n]\{0} to [1; 2n] *)
+
+  let convert i = (* what a bijection *)
+    if i = 0 then failwith "uf_persistant_convert: invalid index"
+    else if i < 0 then i + (Option.get !size_n) (* + 1 *)
+    else i + (Option.get !size_n) -1
+
+  let unconvert i = (* from [0, 2n-1] to [-n, n]\{0} *)
+    let n = (Option.get !size_n) in
+    if i > n-1 then i-n+1 (* on reste côté "positif" *)
+    else i-n (* on passe côté "négatif" *)
+
+  (* let convert = Fun.id *)
+  (* let unconvert = Fun.id *)
+
+  let find (h: t) (x: int) : int = Uf.find h (convert x) |> unconvert
+
+  let union (h: t) (x: int) (y: int) : t = Uf.union h (convert x) (convert y)
+end
+
+module Uf = Make_signed(A)

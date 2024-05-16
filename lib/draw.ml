@@ -4,7 +4,8 @@ let w_vertex, h_vertex = 1, 1.
 
 (* open Ocamlgraph *)
 (* representation of a node -- must be hashable *)
-module Node = struct
+(* type signed_int = Int of int | Bar of int *)
+module Node : (Graph.Sig.COMPARABLE with type t = int) = struct
    type t = int
    let compare = compare
    let hash = Hashtbl.hash

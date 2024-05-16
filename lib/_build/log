@@ -1,0 +1,16 @@
+# dune build --release default
+# OCAMLPARAM: unset
+# Shared cache: disabled
+# Shared cache location: /home/adriroot/.cache/dune/db
+# Workspace root:
+# /home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/lib
+# Auto-detected concurrency: 16
+# Dune context:
+#  { name = "default"
+#  ; kind = "default"
+#  ; profile = Release
+#  ; merlin = true
+#  ; fdo_target_exe = None
+#  ; build_dir = In_build_dir "default"
+#  ; instrument_with = []
+#  }

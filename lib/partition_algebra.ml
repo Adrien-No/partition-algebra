@@ -1,197 +1,226 @@
-(*https://ocaml.org/p/unionFind/latest/doc/UnionFind/Make/index.html*)
-(* on compte à partir de 1 *)
-(* /!\ vérifier le coût des opérations *)
+(* démotivations
+----------------
 
-(* optimisation : faire en O(nombre_de_classe_deq._de_c), pas O( |cl_a|+|cl_b| ) *)
+Soit k la taille de nos diagrammes.
+On construit en O(k) un générateur (avec une grosse constante car tables de hachage)
+Même si l'on pouvait effectuer une concaténation en moins que O(k), on ne peut que concaténer des diagrammes définis au préalable.
+Càd le temps de calcul que l'on voudrait évité aura été pris en initialisant les générateurs (on sait mal copier puisque l'on casse nos diagrammes en concaténant. Par contre l'implementation avec une seule uf permet ce partage car les generateurs seront inchangeable).
 
-module type PARTITION_ALGEBRA = sig
-  type t
+Donc même avec une concaténation plus performante, on aurait la même complexité d'exécution.
+ *)
 
-  val id : t
 
-  val s_i : int -> t
-  val p_i : int -> t
-  val b_i : int -> t
+(* (\*https://ocaml.org/p/unionFind/latest/doc/UnionFind/Make/index.html*\) *)
+(* (\* on compte à partir de 1 *\) *)
+(* (\* /!\ vérifier le coût des opérations *\) *)
 
-  val concat : t -> t -> t
+(* (\* optimisation : faire en O(nombre_de_classe_deq._de_c), pas O( |cl_a|+|cl_b| ) *\) *)
+(* module type PARTITION_ALGEBRA = sig *)
+(*   type t *)
 
-  val print : t -> unit
-end
+(*   val id : t *)
 
-module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct
+(*   val s_i : int -> t *)
+(*   val p_i : int -> t *)
+(*   val b_i : int -> t *)
 
-  (* because transition table is unoriented, we wants to be sure to know *)
-  type signed_int = Int of int | Int_bar of int
-  (* type pos_int = Int of int *)
-  (* type bar_int = Bar of int *)
+(*   val concat : t -> t -> t *)
 
-  (* we need int for transition to get b' from a' (and use htbl once with have the index) *)
-  (* the snd arg will be updated manually in concat, others should not be directly changed ('a elem can be unioned ) *)
-  type t =  (int, int UnionFind.elem) Hashtbl.t *
-            (signed_int,  signed_int) Hashtbl.t * (* we need to sign our int or to have negative index (-k to +k) bc edges are not oriented *)
-            (int, int UnionFind.elem) Hashtbl.t
+(*   val print : t -> unit *)
+(* end *)
 
-  let int_of_signed_int (si: signed_int) =
-    match si with
-    | Int i -> i
-    | Int_bar _ -> failwith "signed_int_conversion_error: can't get int from an int_bar"
+(* module PartitionAlgebra (P: sig val k : int end) : PARTITION_ALGEBRA = struct *)
+(*   (\* open Draw *\) *)
+(*   type pos_int = Pos of int *)
+(*   type neg_int = Neg of int *)
 
-  let int_bar_of_signed_int (si : signed_int ) =
-    match si with
-    | Int_bar i -> i
-    | Int _ -> failwith "signed_int_conversion_error: can't get int_bar from an int"
+(*   (\* type pos_int = Int of int *\) *)
+(*   (\* type bar_int = Bar of int *\) *)
 
-  let list_init() = List.init P.k Int.succ
+(*   (\* we need int for transition to get b' from a' (and use htbl once with have the index) *\) *)
+(*   (\* the snd arg will be updated manually in concat, others should not be directly changed ('a elem can be unioned ) *\) *)
+(*   type t =  (pos_int, pos_int UnionFind.elem) Hashtbl.t * *)
+(*             ((pos_int, neg_int) Hashtbl.t * (neg_int, pos_int) Hashtbl.t) * (\* we need to sign our int or to have negative index (-k to +k) bc edges are not oriented *\) *)
+(*             (neg_int, neg_int UnionFind.elem) Hashtbl.t *)
 
-  let elem_init (positiv:bool) =
-    let open UnionFind in
-    List.map (fun x ->
-        if positiv then
-          x, make x
-        else
-          -x, make (-x)) (list_init())
-    |> List.to_seq |> Hashtbl.of_seq
+(*   (\* let int_of_signed_int (si: signed_int) = *\) *)
+(*   (\*   match si with *\) *)
+(*   (\*   | Int i -> i *\) *)
+(*   (\*   | Bar _ -> failwith "signed_int_conversion_error: can't get int from an int_bar" *\) *)
 
-  let id : t = let h = elem_init true in (* ignore (UnionFind.union (Hashtbl.find h 2) (Hashtbl.find h 3)); *) h,
-               List.combine (list_init()) (list_init()) |> List.map (fun (x, y) -> Int x, Int_bar y) |> List.to_seq |> Hashtbl.of_seq, elem_init false
+(*   (\* let int_bar_of_signed_int (si : signed_int ) = *\) *)
+(*   (\*   match si with *\) *)
+(*   (\*   | Bar i -> i *\) *)
+(*   (\*   | Int _ -> failwith "signed_int_conversion_error: can't get int_bar from an int" *\) *)
 
-  let range_test i i_min i_max =
-    if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
+(*   let list_init() = List.init P.k Int.succ *)
 
-  let s_i i : t =
-    range_test i 1 (P.k-1);
-    elem_init true,
-    List.init P.k (
-      function
-      | j when j = (i-1) -> (Int i, Int_bar (i+1))
-      | j when j = i     -> (Int (i+1), Int_bar i)
-      | n -> (Int (n+1), Int_bar (n+1))
-    ) |> List.to_seq |> Hashtbl.of_seq,
-    elem_init false
+(*   let elem_init_pos() : (pos_int, pos_int UnionFind.elem) Hashtbl.t = *)
+(*     let open UnionFind in *)
+(*     List.map (fun x -> Pos x, make (Pos x)) (list_init()) |> List.to_seq |> Hashtbl.of_seq *)
 
-  let p_i i : t =
-    range_test i 1 P.k;
-    elem_init true,
-    List.init P.k (
-      function
-      | j when j = i-1 -> None
-      | n -> Some (Int (n+1), Int_bar (n+1))
-    ) |> List.filter Option.is_some |> List.map Option.get |> List.to_seq |> Hashtbl.of_seq,
-    elem_init false
+(*   let elem_init_neg() : (neg_int, neg_int UnionFind.elem) Hashtbl.t = (\* could seems a bit redondant but that's to be sure we don't swap pos for neg (i.e a and a') and vice-versa *\) *)
+(*     let open UnionFind in *)
+(*     List.map (fun x -> Neg x, make (Neg x)) (list_init()) |> List.to_seq |> Hashtbl.of_seq *)
 
-  let b_i i : t =
-    range_test i 1 (P.k-1);
-    let h_a, h_a' = elem_init true, elem_init false in
-    ignore (UnionFind.union (Hashtbl.find h_a  i) (Hashtbl.find h_a  (i+1)));
-    ignore (UnionFind.union (Hashtbl.find h_a' (-i)) (Hashtbl.find h_a' (- (i+1)))); (* NOTE attention, -1 ("le suivant dans les négatifs") *)
-    h_a,
-    List.init P.k (
-      function
-      | j when j = (i-1) -> (Int i, Int_bar i)
-      | j when j = i     -> (Int (i+1), Int_bar (i+1))
-      | n -> (Int (n+1), Int_bar (n+1))
-    ) |> List.to_seq |> Hashtbl.of_seq,
-    h_a'
+(*   let id : t = let h = elem_init_pos() in (\* ignore (UnionFind.union (Hashtbl.find h 2) (Hashtbl.find h 3)); *\) h, *)
+(*                (List.combine (list_init()) (list_init()) |> List.map (fun (x, y) -> Pos x, Neg y) |> List.to_seq |> Hashtbl.of_seq, *)
+(*                 List.combine (list_init()) (list_init()) |> List.map (fun (x, y) -> Neg x, Pos y) |> List.to_seq |> Hashtbl.of_seq *)
+(*                ), elem_init_neg() *)
 
-  (* let uf_map (a : 'a elem) (f : 'a elem -> 'a elem) = *)
-  (*   let rec aux k acc = *)
+(*   let range_test (i: int) (i_min: int) (i_max: int) : unit = *)
+(*     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max) *)
 
-  let add_to_trans trans (x, y) =
-    (* we use this function to avoid forgetting adding (y, x) by doing it manually *)
-    match x, y with
-    | Int i, Int_bar i' ->
-      Hashtbl.add trans (Int i) (Int_bar i');
-      Hashtbl.add trans (Int_bar i') (Int i)
-    | _ -> failwith "add_to_trans_error: wrong signed int type"
-  (* | Int_bar i, Int i' -> *)
-  (*   Hashtbl.add trans (Int i) (Int_bar i'); *)
-  (*   Hashtbl.add trans (Int_bar i') (Int i) *)
+(*   let s_i i : t = *)
+(*     range_test i 1 (P.k-1); *)
+(*     elem_init_pos(), *)
+(*     begin *)
+(*       (List.init P.k ( *)
+(*         function *)
+(*         | j when j = (i-1) -> (Pos i, Neg (i+1)) *)
+(*         | j when j = i     -> (Pos (i+1), Neg i) *)
+(*         | n -> (Pos (n+1), Neg (n+1)) *)
+(*       ) |> List.to_seq |> Hashtbl.of_seq), *)
+(*       (List.init P.k ( *)
+(*         function *)
+(*         | j when j = (i-1) -> (Neg (i+1), Pos i) *)
+(*         | j when j = i     -> (Neg i, Pos (i+1)) *)
+(*         | n -> (Neg (n+1), Pos (n+1)) *)
+(*       ) |> List.to_seq |> Hashtbl.of_seq) *)
+(*     end, *)
+(*     elem_init_neg() *)
 
-  let find_trans trans x : signed_int option =
-    Hashtbl.find_opt trans x
+(*   let p_i i : t = *)
+(*     range_test i 1 P.k; *)
+(*     elem_init_pos(), *)
+(*     begin *)
+(*     List.init P.k ( *)
+(*       function *)
+(*       | j when j = i-1 -> None *)
+(*       | n -> Some (Pos (n+1), Neg (n+1)) *)
+(*     ) |> List.filter Option.is_some |> List.map Option.get |> List.to_seq |> Hashtbl.of_seq, *)
+(*         List.init P.k ( *)
+(*       function *)
+(*       | j when j = i-1 -> None *)
+(*       | n -> Some (Neg (n+1), Pos (n+1)) *)
+(*     ) |> List.filter Option.is_some |> List.map Option.get |> List.to_seq |> Hashtbl.of_seq *)
+(*     end, *)
+(*     elem_init_neg() *)
 
-  let concat
-      (h_a, a_trans, _h_a' : t)
-      (h_b, b_trans, h_b' : t) : t =
-    (* on suppose que a et b sont de bonne taille *)
-    Printf.printf "begin concat\n";
-    (* [0] : union les a' / b' *)
+(*   let b_i i : t = *)
+(*     range_test i 1 (P.k-1); *)
+(*     let h_a, h_a' = elem_init_pos(), elem_init_neg() in *)
+(*     ignore (UnionFind.union (Hashtbl.find h_a  (Pos i)) (Hashtbl.find h_a  (Pos (i+1)))); *)
+(*     ignore (UnionFind.union (Hashtbl.find h_a' (Neg i)) (Hashtbl.find h_a' (Neg (i+1)))); *)
+(*     h_a, *)
+(*     begin *)
+(*     List.init P.k ( *)
+(*       function *)
+(*       | j when j = (i-1) -> (Pos i, Neg i) *)
+(*       | j when j = i     -> (Pos (i+1), Neg (i+1)) *)
+(*       | n -> (Pos (n+1), Neg (n+1)) *)
+(*     ) |> List.to_seq |> Hashtbl.of_seq, *)
+(*     List.init P.k( *)
+(*           function *)
+(*       | j when j = (i-1) -> (Neg i, Pos i) *)
+(*       | j when j = i     -> (Neg (i+1), Pos (i+1)) *)
+(*       | n -> (Neg (n+1), Pos (n+1)) *)
+(*     ) |> List.to_seq |> Hashtbl.of_seq *)
+(*     end, *)
+(*     h_a' *)
 
-    (* [1] :  *)
-    let c_trans = Hashtbl.create 1 in (* we also could use two hashtbl and remove signed_int type *) (* TODO réutiliser une ancienne table ? *)
-    Hashtbl.iter (fun ant im  ->
-        match ant with
-          Int_bar _ -> ()
-        | Int i_ant ->  (* only search cases where src of edge is in a (not a') *)
-          let cl_a = Hashtbl.find h_a i_ant in
-          begin
-            match find_trans c_trans ant with
-            | None ->
-              begin
-                (* eventualy adding a transition *)
-                match find_trans b_trans im with
-                | None ->
-                  begin
-                    match Hashtbl.find_opt h_b i_ant with
-                    | None -> ()
-                    | Some cl_b -> ignore (UnionFind.union cl_a cl_b)
-                  end
-                | Some Int_bar y' ->
-                  begin
-                    let _cl_b' = Hashtbl.find h_b' y' in
-                    match find_trans c_trans (Int_bar y') with
-                    | None ->
-                      Printf.printf "edge added\n";
-                      Hashtbl.add c_trans ant (Int_bar y')
-                    (* | Some Int i *) | Some Int i_y ->
-                      (* on va remonter jusqu'à l'autre x (de A) qui donne une image dans la même cl de B *)
-                      (* let previous_y = Hashtbl.find b_trans (Int_bar y') in *)
-                      let previous_x' = Hashtbl.find c_trans (Int i_y) in
-                      let previous_x = Hashtbl.find a_trans previous_x' in
-                      ignore (UnionFind.union (Hashtbl.find h_a (int_of_signed_int previous_x)) (Hashtbl.find h_a (int_of_signed_int ant)))
-                    | Some Int_bar _ -> ()
-                  end
-                | Some Int _y' -> ()
+(*   (\* let uf_map (a : 'a elem) (f : 'a elem -> 'a elem) = *\) *)
+(*   (\*   let rec aux k acc = *\) *)
 
-              end
-            | Some _x' -> failwith "todo / should not be rushable"
-          end
-      ) a_trans;
-    h_a, c_trans, h_b'
+(*   let add_to_trans trans trans' (x, y) = *)
+(*     (\* we use this function to avoid forgetting adding (y, x) by doing it manually *\) *)
+(*       Hashtbl.add trans x y; *)
+(*       Hashtbl.add trans' y x *)
 
-    let convert si =
-      match si with
-      | Int i -> i
-      | Int_bar i -> -i
+(*   (\* let find_trans trans x : signed_int option = *\) *)
+(*   (\*   Hashtbl.find_opt trans x *\) *)
 
-  let to_graph (diagram: t) =
-    let open Draw in
-    let convert si =
-      match si with
-      | Int i -> i
-      | Int_bar i -> -i
-    in
-    let h_a, edges, h_a' = diagram in
-      List.fold_left (G.add_vertex) G.empty (list_init() @ (list_init() |> List.map Int.neg))
-      |> Hashtbl.fold (fun key value g ->
-          if UnionFind.get value <> key then
-            G.add_edge g key (UnionFind.find value |> UnionFind.get)
-          else g
-        ) h_a
-      |> Hashtbl.fold (fun key value g ->
-          if UnionFind.get value <> key then
-            G.add_edge g key (UnionFind.find value |> UnionFind.get)
-          else g
-        ) h_a'
-      |> Hashtbl.fold (fun key value g ->
-          G.add_edge g (convert key) (convert value)
-        ) edges
-      (* |> fun g -> G.add_edge g 2 (-3) *)
+(*   let concat *)
+(*       (h_a, a_trans, _h_a' : t) *)
+(*       (h_b, b_trans, h_b' : t) : t = *)
+(*     (\* on suppose que a et b sont de bonne taille *\) *)
+(*     Printf.printf "begin concat\n"; *)
+(*     (\* [0] : union les a' / b *\) (\* TODO en O(n) ... *\) (\* faut que quand consomme un rpz d'une classe, on le saute ensuite (regarder rpzentant ?) *\) *)
 
-  let print (diagram: t) =
-    let g = to_graph diagram in
-    (* let g = Draw.G.add_edge g 2 (-3) in *)
-    let file = open_out "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram_test.dot" in
-    (* failwith "todo "  *)Draw.Dot.output_graph file g
+(*     (\* [1] :  *\) *)
+(*     let c_trans_pos: (pos_int, neg_int) Hashtbl.t = Hashtbl.create 1 in (\* we also could use two hashtbl and remove signed_int type *\) (\* TODO réutiliser une ancienne table ? *\) *)
+(*     let c_trans_bar: (neg_int, pos_int) Hashtbl.t = Hashtbl.create 1 in *)
+(*     Hashtbl.iter (fun (ant:pos_int) (im:neg_int)  -> *)
+(*         (\* only search cases where src of edge is in a (not a') *\) *)
+(*           let cl_a = Hashtbl.find h_a ant in *)
+(*           begin *)
+(*             match Hashtbl.find_opt c_trans_pos ant with *)
+(*             | None -> *)
+(*               begin *)
+(*                 (\* eventualy adding a transition *\) *)
+(*                 match Hashtbl.find_opt (snd b_trans) im with *)
+(*                 | None -> *)
+(*                   begin *)
+(*                     match Hashtbl.find_opt h_b ant with *)
+(*                     | None -> () *)
+(*                     | Some cl_b -> ignore (UnionFind.union cl_a cl_b) *)
+(*                   end *)
+(*                 | Some Pos y' -> *)
+(*                   begin *)
+(*                     let _cl_b' = Hashtbl.find h_b' (Neg y') in *)
+(*                     match Hashtbl.find_opt c_trans_pos (Neg y') with *)
+(*                     | None -> *)
+(*                       Printf.printf "edge added\n"; *)
+(*                       Hashtbl.add c_trans ant (Neg y') *)
+(*                     (\* | Some Int i *\) | Some Pos i_y -> *)
+(*                       (\* on va remonter jusqu'à l'autre x (de A) qui donne une image dans la même cl de B *\) *)
+(*                       (\* let previous_y = Hashtbl.find b_trans (Int_bar y') in *\) *)
+(*                       let previous_x' = Hashtbl.find c_trans (Pos i_y) in *)
+(*                       let previous_x = Hashtbl.find a_trans previous_x' in *)
+(*                       ignore (UnionFind.union (Hashtbl.find h_a (Pos (int_of_signed_int previous_x))) (Hashtbl.find h_a (Pos (int_of_signed_int ant)))) *)
+(*                     | Some Neg _ -> () *)
+(*                   end *)
+(*                 | Some Pos _y' -> () *)
 
-end
+(*               end *)
+(*             | Some _x' -> failwith "todo / should not be rushable" *)
+(*           end *)
+(*       ) (fst a_trans); *)
+(*     h_a, c_trans, h_b' *)
+
+(*     let convert si = *)
+(*       match si with *)
+(*       | Pos i -> i *)
+(*       | Neg i -> -i *)
+
+(*   let to_graph (diagram: t) = *)
+(*     let open Draw in *)
+(*     let convert si = *)
+(*       match si with *)
+(*       | Pos i -> i *)
+(*       | Neg i -> -i *)
+(*     in *)
+(*     let h_a, edges, h_a' = diagram in *)
+(*       List.fold_left (G.add_vertex) G.empty ((list_init() |> List.map (fun x -> Pos x)) @ (list_init() |> List.map (fun x -> Neg x))) *)
+(*       |> Hashtbl.fold (fun key value g -> *)
+(*           if UnionFind.get value <> key then *)
+(*             G.add_edge g key (UnionFind.find value |> UnionFind.get) *)
+(*           else g *)
+(*         ) h_a *)
+(*       |> Hashtbl.fold (fun key value g -> *)
+(*           if UnionFind.get value <> key then *)
+(*             G.add_edge g key (UnionFind.find value |> UnionFind.get) *)
+(*           else g *)
+(*         ) h_a' *)
+(*       |> Hashtbl.fold (fun key value g -> *)
+(*           G.add_edge g (convert key) (convert value) *)
+(*         ) edges *)
+(*       (\* |> fun g -> G.add_edge g 2 (-3) *\) *)
+
+(*   let print (diagram: t) = *)
+(*     let g = to_graph diagram in *)
+(*     (\* let g = Draw.G.add_edge g 2 (-3) in *\) *)
+(*     let file = open_out "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram_test.dot" in *)
+(*     (\* failwith "todo "  *\)Draw.Dot.output_graph file g *)
+
+(* end *)

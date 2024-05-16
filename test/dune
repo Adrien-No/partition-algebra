@@ -1,4 +1,11 @@
 (test
- (name generators)
- (libraries utils)
+  (name test_uf_persistant)
+  (libraries utils)
+  (modules test_uf_persistant)
 )
+
+; (test
+;  (name generators)
+;  (libraries utils)
+;  (modules generators)
+; )
