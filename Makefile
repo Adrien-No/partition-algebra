@@ -15,7 +15,7 @@ mtest:
 
 mbin:
 	make mtest
-	dune build --profile release
+	dune build -f --profile release
 	_build/default/bin/main.exe
 	./convert.sh
 

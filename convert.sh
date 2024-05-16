@@ -15,5 +15,6 @@ if ls img/diagram*.dot 1> /dev/null 2>&1; then
 fi
 # concat pngs into a single png
 convert -append img/diagram*.png img/final_output.png
+
 rm -f img/diagram*.png
-rm -f img/*.dot
+#rm -f img/*.dot

@@ -115,7 +115,7 @@ module Make_signed(A: PersistentArray) : PersistentUnionFind = struct
 
   let create n =
     size_n := Some n; (* need to know n to realise transformationss *)
-    Uf.create (n*2) (* we go from [-n; n]\{0} to [0; 2n-1] *)
+    Uf.create (n) (* we go from [-n; n]\{0} to [0; 2n-1] *)
 
   let convert i = (* what a bijection *)
     if i = 0 then failwith "uf_persistant_convert: invalid index"
@@ -135,4 +135,4 @@ module Make_signed(A: PersistentArray) : PersistentUnionFind = struct
   let union (h: t) (x: int) (y: int) : t = Uf.union h (convert x) (convert y)
 end
 
-module Uf = Make_signed(A)
+module Uf = Make(A)

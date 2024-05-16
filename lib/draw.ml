@@ -60,7 +60,7 @@ module Dot = Graph.Graphviz.Neato(struct
    let vertex_name (v: int) : string = string_of_int v
 
    let default_vertex_attributes _ = []
-  let graph_attributes _ = [(* `Pagedir `LeftToRight *)]
+  let graph_attributes _ = [`Spline true(* `Pagedir `LeftToRight *)]
 end)
 
 let pin_dot (file_name: string) =
