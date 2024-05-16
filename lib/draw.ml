@@ -2,6 +2,24 @@
 
 let w_vertex, h_vertex = 1, 1.
 
+(* let print_ill t = *)
+(*   let open List in *)
+(*   Printf.printf "[|"; *)
+(*   iteri (fun i t -> *)
+(*       iteri (fun j x -> *)
+(*           Printf.printf "%i" x; *)
+(*           if j <> length t -1 then *)
+(*             Printf.printf " " *)
+(*         ) t; *)
+(*       if i  <> length t -1 then *)
+(*             Printf.printf "\n" *)
+(*     ) t; *)
+(*   Printf.printf "|]\n" *)
+
+let print_ill l =
+  let l = List.map (fun l -> ("\t[|" ^ (l |> List.map string_of_int |> String.concat " ") ^ "|]")) l in
+  "[|" ^ (String.concat "\n" l) ^ "|]\n" |> Printf.printf "%s"
+
 (* open Ocamlgraph *)
 (* representation of a node -- must be hashable *)
 (* type signed_int = Int of int | Bar of int *)

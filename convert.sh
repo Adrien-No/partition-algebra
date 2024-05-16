@@ -5,8 +5,8 @@
 # Vérifie s'il existe des fichiers correspondant au modèle
 if ls img/diagram*.dot 1> /dev/null 2>&1; then
   for file in img/diagram*.dot; do
-      echo "fichier en traitement :"
-      echo "$file"
+      # echo "fichier en traitement :"
+      # echo "$file"
       # Extraction de la partie du nom de fichier sans extension
       base=$(basename "$file" .dot)
       # Exécution de la commande dot avec les noms de fichiers appropriés

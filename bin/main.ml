@@ -6,6 +6,6 @@ let _ =
       try
         Utils.Draw.pin_dot (Printf.sprintf "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram%i.dot" !c);
         incr c
-      with Sys_error s -> Printf.printf "dernier fichier+1: %s\n" s;
+      with Sys_error s -> (* Printf.printf "dernier fichier+1: %s\n" s; *)
         continue := false
   done

@@ -1,3 +1,5 @@
+Printexc.record_backtrace true
+
 module type DIAGRAM = sig
   type t
 
