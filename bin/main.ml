@@ -1,5 +1,5 @@
 let _ =
-  (* Printf.printf "draw lib called\n"; *)
+  Printf.printf "draw lib called\n";
   let c = ref 0 in
   let continue = ref true in
   while !continue do

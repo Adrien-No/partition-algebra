@@ -1,28 +1,11 @@
 (* from https://stackoverflow.com/questions/8999557/how-to-visualize-draw-automata-in-ocaml *)
 
-let w_vertex, h_vertex = 1, 1.
-
-(* let print_ill t = *)
-(*   let open List in *)
-(*   Printf.printf "[|"; *)
-(*   iteri (fun i t -> *)
-(*       iteri (fun j x -> *)
-(*           Printf.printf "%i" x; *)
-(*           if j <> length t -1 then *)
-(*             Printf.printf " " *)
-(*         ) t; *)
-(*       if i  <> length t -1 then *)
-(*             Printf.printf "\n" *)
-(*     ) t; *)
-(*   Printf.printf "|]\n" *)
+let w_vertex, h_vertex = 1, 1
 
 let print_ill l =
   let l = List.map (fun l -> ("\t[|" ^ (l |> List.map string_of_int |> String.concat " ") ^ "|]")) l in
   "[|" ^ (String.concat "\n" l) ^ "|]\n" |> Printf.printf "%s"
 
-(* open Ocamlgraph *)
-(* representation of a node -- must be hashable *)
-(* type signed_int = Int of int | Bar of int *)
 module Node : (Graph.Sig.COMPARABLE with type t = int) = struct
    type t = int
    let compare = compare
@@ -44,24 +27,37 @@ module G = Graph.Persistent.Digraph.ConcreteBidirectionalLabeled(Node)(Edge)
 (* more modules available, e.g. graph traversal with depth-first-search *)
 module D = Graph.Traverse.Dfs(G)
 
+module type P = sig val k : int end
 (* module for creating dot-files *)
-module Dot = Graph.Graphviz.Neato(struct
+module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
+
    include G (* use the graph module from above *)
    let edge_attributes (_a, e, _b) = [`Label e; `Color 4711]
    let default_edge_attributes _ = []
    let get_subgraph _ = None
-   (* let vertex_attributes v = *)
 
-   (*   [`Shape `Box; `Pos (Printf.sprintf "%i,%i0!" x y)] (\* attributs de position manuelle *\) *)
    let vertex_attributes v =
-     let x, y = (abs v) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0.
+     let x, y =
+       if v < P.k then
+         v, 1
+       else
+         (2*P.k-v-1), 0
      in
-     [`Shape `Circle; `Pos (x,y)]
+     (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
+     (* in *)
+     [`Shape `Circle; `Pos (float_of_int (x+w_vertex), float_of_int (y+h_vertex))]
+
    let vertex_name (v: int) : string = string_of_int v
+     (* let k = 3 in *)
+     (* string_of_int (if v > 0 then v else (k-v)) *)
 
    let default_vertex_attributes _ = []
   let graph_attributes _ = [`Spline true(* `Pagedir `LeftToRight *)]
 end)
+
+let dot_as_graph file g k =
+  let module Dot = Dot(struct let k = k end : P) in
+  Dot.output_graph file g
 
 let pin_dot (file_name: string) =
   (* OCaml lib doesn't support adding parameter `!` for pinning (defining permanent pos), so we add it in the .dot file *)

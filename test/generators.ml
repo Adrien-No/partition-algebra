@@ -37,28 +37,33 @@ module type DIAGRAM = sig
 end
 
 module Diagram (P: sig val k : int end) : DIAGRAM = struct
+  (* En interne, les diagrammes sont numérotés *)
+  (* de 0 à k-1 (en haut, de gauche à droite) *)
+  (* puis de 2k-1 à k(en bas, de gauche à droite) *)
 
+  (* Les générateurs sont numérotés en externe de 1 à k *)
   type t = int list list
 
-  let id = List.init P.k (fun i -> let i = i+1 in [i; P.k-i]) (* index goes from 1 to P.k and -1 to -P.k *)
+  let id = List.init P.k (fun i -> [i; 2*P.k-1-i])(* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
 
   let s_i i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
     range_test i 1 (P.k-1);
+    let i = i-1 in
     List.init P.k (
       function
-      | j when j = i-1   -> [i  ; -P.k+(i+1)]
-      | j when j = i -> [i+1; -P.k+i  ]
-      | i -> [i+1; -P.k+(i+1)])
+      | j when j = i   -> [j  ; 2*P.k-j-2]
+      | j when j = i+1 -> [j; 2*P.k-j]
+      | j ->              [j; 2*P.k-j-1])
 
   let p_i i =
     range_test i 1 P.k;
     List.init P.k (
       function
-      | j when j = i-1 -> []
-      | i -> [i+1; -P.k+(i+1)]
+      | j when j = i -> []
+      | i -> [i; 2*P.k-(i+1)]
     ) |> List.filter ((<>)[])
 
   let b_i i =
@@ -100,19 +105,20 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
     (* let file = open_out (Printf.sprintf "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram%i.dot" !diagram_counter) in *)
     let file = open_out ("/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram"^string_of_int !diagram_counter ^".dot") in
     incr diagram_counter;
-    (* failwith "todo "  *)Draw.Dot.output_graph file g
+    (* failwith "todo "  *)Draw.dot_as_graph file g P.k
 
   let print_empty () = print []
 
-  let convert i = (* from [-n, n]\{0} to [0, 2n-1] *)
-    if i = 0 then failwith "generator_convert: invalid index"
-    else if i < 0 then i + (P.k) (* + 1 *)
-    else i + P.k -1
+  (* let convert i = (\* from [-n, n]\{0} to [0, 2n-1] *\) *)
+  (*   if i = 0 then failwith "generator_convert: invalid index" *)
+  (*   else if i < 0 then i + (P.k) (\* + 1 *\) *)
+  (*   else i + P.k -1 *)
 
-  let unconvert i = (* from [0, 2n-1] to [-n, n]\{0} *)
-    if i > P.k-1 then i-P.k+1 (* on reste côté "positif" *)
-    else i-P.k (* on passe côté "négatif" *)
-  open Uf_persistant
+  (* let unconvert i = (\* from [0, 2n-1] to [-n, n]\{0} *\) *)
+  (*   if i > P.k-1 then i-P.k+1 (\* on reste côté "positif" *\) *)
+  (*   else i-P.k (\* on passe côté "négatif" *\) *)
+
+open Uf_persistant
 
   let ill_of_uf uf k =
     let canonical_index = Array.make (k) None in (* NOTE opti : take n = max |a| + |b| *)
@@ -135,8 +141,10 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
 
     done;
     let rec res_list i acc =
-      if i > convert P.k then acc
-      else match dyna_res_arr.(i) with
+      if i > P.k then acc
+      else
+      (* Printf.printf "res_list i_arg : %i\n" i; *)
+      match dyna_res_arr.(i) with
         | [] -> acc
         | cl -> res_list (i+1) (cl::acc)
     in
@@ -159,8 +167,8 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
   let concat (a: t) (b: t) : t =
     (* let a = ll_map (function n when n <= 0 -> convert n | n -> n) a *)
     (* and b = ll_map (function n when n <= 0 -> convert n | n -> n) b in *)
-    let a = ll_map convert a
-    and b = ll_map convert b in
+    (* let a = ll_map convert a *)
+    (* and b = ll_map convert b in *)
     let uf = Uf.create (3*P.k) in
 
     (* [1] unify depending on a *)
@@ -192,7 +200,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
     let res = ll_filter_map f c in
     Draw.print_ill res;
     print res;
-    let res = ll_map unconvert res in
+    (* let res = ll_map unconvert res in *)
     Draw.print_ill res;
     print res;
     res
@@ -204,7 +212,7 @@ module type P = sig val k : int end
 module Partition = Diagram (struct let k = 5 end : P)
 
 let test1() =
-  let _s = Partition.s_i 1 in
+  let _s = Partition.s_i 3 in
   let _s' = Partition.s_i 1 in
   Partition.print (_s);
   Partition.print (_s');
@@ -216,8 +224,19 @@ let test2() =
   let _s' = Partition.id in
   Partition.print (_s);
   Partition.print (_s');
-  Partition.print_empty();
+  (* Partition.print_empty(); *)
   Partition.print (Partition.concat _s _s')
+
+let test3() =
+  Partition.print(Partition.id)
+
+let test4() =
+  let _p = Partition.p_i 1 in
+  let _p' = Partition.p_i 4 in
+  Partition.print (_p);
+  Partition.print (_p')(* ; *)
+  (* Partition.print_empty(); *)
+  (* Partition.print (Partition.concat _s _s') *)
 
 let _ =
   test2()

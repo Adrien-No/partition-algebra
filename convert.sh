@@ -17,4 +17,4 @@ fi
 convert -append img/diagram*.png img/final_output.png
 
 rm -f img/diagram*.png
-#rm -f img/*.dot
+rm -f img/*.dot
