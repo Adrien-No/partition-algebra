@@ -9,9 +9,7 @@
 # end
 
 mtest:
-	# -Kneato
 	dune runtest -f --profile release # construit les .dot
-	# dot -Kneato -Tpng img/diagram_test.dot > img/diagram_test.png
 
 mbin:
 	make mtest
@@ -20,8 +18,7 @@ mbin:
 	./convert.sh
 
 show:
-	# eog img/$(IMG)
-	eog img/final_output.png &
+	eog img/permanent/output.png &
 
 clear:
 	rm -f img/diagram*.png

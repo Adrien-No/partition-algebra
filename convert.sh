@@ -14,6 +14,6 @@ if ls img/diagram*.dot 1> /dev/null 2>&1; then
   done
 fi
 # concat pngs into a single png
-convert -append img/diagram*.png img/final_output.png
-
-# make clear
+convert -append img/diagram*.png img/permanent/output.png
+convert -append img/diagram*.png img/permanent/output2.png # bug pour ne pas avoir de flash lumineux lors de l'actualisation
+make clear

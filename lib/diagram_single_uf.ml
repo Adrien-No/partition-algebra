@@ -1,3 +1,7 @@
+(* NOTE (à améliorer)
+   - lors d'une concat l'algo a tendance a prendre l'arete du bas (on pourrait prendre la plus proche / la plus à gauche)
+*)
+
 module type DIAGRAM = sig
   type t
 
@@ -14,13 +18,13 @@ module type DIAGRAM = sig
 
   val concat : t -> t -> t
   val (@) : t -> t -> t
-  val (=) : t -> t -> bool
+  val (===) : t -> t -> bool
   val print : t -> unit
 
   val print_empty : unit -> unit
 end
 
-module Diagram (P: sig val k : int end) : DIAGRAM = struct
+module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = struct
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
@@ -83,7 +87,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
   let diagram_counter = ref 0
   let print (diagram: t) =
     let g = to_graph diagram in
-    let file = open_out ("/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram"^string_of_int !diagram_counter ^".dot") in
+    let file = open_out (Sys.getcwd() ^ "/../../../img/diagram"^string_of_int !diagram_counter ^".dot") in
     incr diagram_counter;
     Draw.dot_as_graph file g P.k
 
@@ -152,7 +156,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM = struct
 
   let (@) = concat
 
-  let (=) d d' = (* NOTE pour l'instant on ne trie pas lors de la concatenation (on suppose qu'on utilise l'égalité peu souvent). *)
+  let (===) d d' = (* NOTE pour l'instant on ne trie pas lors de la concatenation (on suppose qu'on utilise l'égalité peu souvent). *)
                  (* Si triait était trop couteux et que OCaml ne fait pas d'opti on pourrait penser à mémoriser si une liste est deja triée ou non. *)
     let d = List.map (List.sort compare) d |> List.sort compare
     and d' = List.map (List.sort compare) d' |> List.sort compare in

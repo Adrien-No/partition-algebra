@@ -46,7 +46,7 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
    let vertex_name (v: int) : string = Toolbox.unconvert P.k v |> string_of_int
 
   let default_vertex_attributes _ = []
-  let graph_attributes _ = [`Spline true; `Sep 1.]
+  let graph_attributes _ = [`Spline true]
 end)
 
 let dot_as_graph file g k =
