@@ -50,14 +50,35 @@ let tester() =
                    [9; 7];
                    [15; 8; 6; 4; 3];
                    [5; 2];
-                   [11; 1; 0]])
+                   [11; 1; 0]] |> Utils.Toolbox.ll_sort)
     in
     errorer (concat a b) c
-  with Error (d, d') -> print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
+  with Error (d, d') -> print d; print d'; Printf.printf "[ERROR] big_input_tests: not equal" (* we don't really raise so diagrams can be printed *)
 
-(* let generate_symmetric_group k = *)
-(*   let cache = Hashtbl.create  *)
+(* code pas du tout efficace pour generer exactement les elements; mais justement c'est pour voir si y'a d'autres elements crees ou non *)
+let generate_symmetric_group k =
+  let cache = Hashtbl.create 8 in
+  let rec loop (d: int list list) : unit =
+    if Hashtbl.mem cache d |> not then
+      begin
+        Hashtbl.add cache d ();
+        let nexts =
+          List.init (k-1) Int.succ
+          |> List.map s
+          |> List.map ((@)d)
+        in
+        (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
+        List.iter (fun concated -> loop concated) nexts
+      end
+  in
+  loop id;
+  Hashtbl.length cache
 
 let _ =
   tester();
+  for i = 1 to 8 do
+    let module Partition = Diagram (struct let k = k end : sig val k : int end) in
+    let open Partition in
+    Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i);
+  done;
   print id

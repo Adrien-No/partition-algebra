@@ -22,6 +22,9 @@ let ll_filter_map f ll =
   |> ll_filter ((<>)None)
   |> ll_map Option.get
 
+let ll_sort ll =
+  List.map (List.fast_sort compare) ll |> List.fast_sort compare
+
 let ll_print l =
   let l = List.map (fun l -> ("[" ^ (l |> List.map string_of_int |> String.concat "; ") ^ "]")) l in
   "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"

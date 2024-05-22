@@ -33,9 +33,9 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
   type t = int list list
 
   (** unsafe creation from \[-k;k\]\{0} to \[0; 2*k-1\]*)
-  let of_ill = Toolbox.ll_map (Toolbox.convert P.k)
+  let of_ill ll = Toolbox.ll_map (Toolbox.convert P.k) ll |> Toolbox.ll_sort
 
-  let id = List.init P.k (fun i -> [i; P.k+i])(* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
+  let id = List.init P.k (fun i -> [i; P.k+i]) |> Toolbox.ll_sort(* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
@@ -47,7 +47,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       function
       | j when j = i   -> [j  ; P.k+j+1]
       | j when j = i+1 -> [j; P.k+j-1]
-      | j ->              [j; P.k+j])
+      | j ->              [j; P.k+j]) |> Toolbox.ll_sort
 
   let p i =
     range_test i 1 P.k;
@@ -56,7 +56,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       function
       | j when j = i -> []
       | i -> [i; P.k+i]
-    ) |> List.filter ((<>)[])
+    ) |> List.filter ((<>)[]) |> Toolbox.ll_sort
 
   let b i =
     range_test i 1 (P.k-1);
@@ -66,7 +66,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       | j when j = i -> [i; i+1; P.k+i; P.k+i+1]
       | j when j = i+1 -> []
       | i -> [i; P.k+i]
-    ) |> List.filter ((<>)[])
+    ) |> List.filter ((<>)[]) |> Toolbox.ll_sort
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -152,18 +152,15 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       | n when n < 2*P.k -> None
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
-    Toolbox.ll_filter_map f c
+    Toolbox.ll_filter_map f c |> Toolbox.ll_sort
 
   let (@) = concat
 
-  let (===) d d' = (* NOTE pour l'instant on ne trie pas lors de la concatenation (on suppose qu'on utilise l'égalité peu souvent). *)
-                 (* Si triait était trop couteux et que OCaml ne fait pas d'opti on pourrait penser à mémoriser si une liste est deja triée ou non. *)
-    let d = List.map (List.sort compare) d |> List.sort compare
-    and d' = List.map (List.sort compare) d' |> List.sort compare in
+  let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
     (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
      d = d'
 
-  let e i = b i @ p i @ p (i+1) @ b i
+  let e i = b i @ p i @ p (i+1) @ b i (* déjà triés car les concat et autres gen sont triées *)
 
   let l i = s i @ p i
 
