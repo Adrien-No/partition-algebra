@@ -220,7 +220,7 @@ Donc même avec une concaténation plus performante, on aurait la même complexi
 (*   let print (diagram: t) = *)
 (*     let g = to_graph diagram in *)
 (*     (\* let g = Draw.G.add_edge g 2 (-3) in *\) *)
-(*     let file = open_out "/home/adriroot/Nextcloud/cours/mag/ter/factorisation-semigroupes/partition_algebra/img/diagram_test.dot" in *)
+(*     let file = open_out "partition_algebra/img/diagram_test.dot" in *)
 (*     (\* failwith "todo "  *\)Draw.Dot.output_graph file g *)
 
 (* end *)

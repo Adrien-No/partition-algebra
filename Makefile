@@ -15,7 +15,7 @@ mbin:
 	make mtest
 	dune build -f --profile release
 	_build/default/bin/main.exe
-	./convert.sh
+	./.convert.sh
 
 show:
 	eog img/permanent/output.png &
