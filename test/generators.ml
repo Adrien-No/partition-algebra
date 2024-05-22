@@ -1,7 +1,7 @@
 Printexc.record_backtrace true
 
 open Utils.Toolbox
-open Utils.Diagram_single_uf
+open Utils.Diagram
 
 let k = 3
 module Partition = Diagram (struct let k = k end : sig val k : int end)
