@@ -2,10 +2,6 @@
 
 let w_vertex, h_vertex = 1, 1
 
-let print_ill l =
-  let l = List.map (fun l -> ("\t[|" ^ (l |> List.map string_of_int |> String.concat " ") ^ "|]")) l in
-  "[|" ^ (String.concat "\n" l) ^ "|]\n" |> Printf.printf "%s"
-
 module Node : (Graph.Sig.COMPARABLE with type t = int) = struct
    type t = int
    let compare = compare
@@ -41,29 +37,28 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
        if v < P.k then
          v, 1
        else
-         (2*P.k-v-1), 0
+         (v-P.k), 0
      in
      (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
      (* in *)
      [`Shape `Circle; `Pos (float_of_int (x+w_vertex), float_of_int (y+h_vertex))]
 
-   let vertex_name (v: int) : string = string_of_int v
-     (* let k = 3 in *)
-     (* string_of_int (if v > 0 then v else (k-v)) *)
+   let vertex_name (v: int) : string = Toolbox.unconvert P.k v |> string_of_int
 
-   let default_vertex_attributes _ = []
-  let graph_attributes _ = [`Spline true(* `Pagedir `LeftToRight *)]
+  let default_vertex_attributes _ = []
+  let graph_attributes _ = [`Spline true; `Sep 1.]
 end)
 
 let dot_as_graph file g k =
   let module Dot = Dot(struct let k = k end : P) in
   Dot.output_graph file g
 
-let pin_dot (file_name: string) =
+let pin_dot_and_typo (file_name: string) =
   (* OCaml lib doesn't support adding parameter `!` for pinning (defining permanent pos), so we add it in the .dot file *)
   let file = open_in_bin file_name in
   let content = really_input_string file (in_channel_length file) in
   let new_content = Str.global_replace (Str.regexp "\", s") ("!\", s") content in
+  let new_content = Str.global_replace (Str.regexp "spline") ("splines") new_content in
   close_in file;
   let file = Out_channel.open_bin file_name in
   Out_channel.output_string file new_content;

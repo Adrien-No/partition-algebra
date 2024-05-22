@@ -22,3 +22,7 @@ mbin:
 show:
 	# eog img/$(IMG)
 	eog img/final_output.png &
+
+clear:
+	rm -f img/diagram*.png
+	rm -f img/*.dot
