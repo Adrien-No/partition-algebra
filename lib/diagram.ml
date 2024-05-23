@@ -44,12 +44,17 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
 
-  let check_diagram (d: t) =
+  let check_diagram (d: t) : unit =
     let h = Hashtbl.create (P.k*2) in
     let range_test i = range_test i 0 (P.k*2-1) in
     Toolbox.ll_iter (fun i -> range_test i; Hashtbl.add h i ()) d;
-    List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h))
-    && d = Toolbox.ll_sort d
+    if List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h))
+      && d = Toolbox.ll_sort d
+    then ()
+    else begin
+        Printf.printf "[ERROR] invariants not maintained\n";
+        Toolbox.ll_print d;
+        failwith "[error]" end
 
   let s i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
     range_test i 1 (P.k-1);
@@ -115,11 +120,13 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
 
   open Uf_persistant
 
-  let ill_of_uf uf k =
-    let canonical_index = Array.make (k) None in (* NOTE opti : take n = max |a| + |b| *)
-    let dyna_res_arr = Array.make (k) [] in
+  (** [ill_of_uf uf k] Queries the [uf] structure with integer from 0 to 2[k]-1, to rebuild the partition of [0; 2k-1] as an int list list *)
+  let ill_of_uf uf n =
+    (* n is the size of the uf (oftenly, n = 2*k) *)
+    let canonical_index = Array.make n None in (* NOTE opti : take n = max |a| + |b| *)
+    let dyna_res_arr = Array.make n [] in
     let len_res = ref 0 in
-    for i = 0 to k-1 do
+    for i = 0 to n-1 do
       let rpz = Uf.find uf i in
       let rpz_index_in_res =
         match canonical_index.(rpz) with
@@ -133,9 +140,9 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       dyna_res_arr.(rpz_index_in_res) <- i::dyna_res_arr.(rpz_index_in_res)
     done;
     let rec res_list i acc =
-      if i > P.k then acc
+      if i >= n (* P.k *) then acc
       else match dyna_res_arr.(i) with
-        | [] -> acc
+        | [] -> res_list (i+1) acc
         | cl -> res_list (i+1) (cl::acc)
     in
     res_list 0 []
@@ -155,6 +162,10 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       add_diagram_to_uf new_acc _cls
 
   let concat (a: t) (b: t) : t =
+    check_diagram a;
+    check_diagram b;
+    (* Printf.printf "\na="; Toolbox.ll_print a; *)
+    (* Printf.printf "\nb=";Toolbox.ll_print b; *)
     (* [0] initialize uf structure *)
     let uf = Uf.create (3*P.k) in
 
@@ -173,11 +184,9 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
     let res = Toolbox.ll_filter_map f c |> Toolbox.ll_sort in
-    (* if check_diagram res then res *)
-    (* else begin Printf.printf "[ERROR] invariants not maintained\n"; *)
-    (*   Toolbox.ll_print res; *)
-    (*   failwith "[error]" end *)
+    check_diagram res;
     res
+
   let (@) = concat
 
   let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)

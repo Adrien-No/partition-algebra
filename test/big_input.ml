@@ -1,3 +1,5 @@
+Printexc.record_backtrace true
+
 open Utils.Diagram
 
 let k = 11
@@ -25,8 +27,11 @@ exception Error of Partition.t * Partition.t
 let tester() =
   let errorer x y =
   if x === y then () (* l'égalité correspond à celle dans la partition *)
-  else raise (Error (x, y))
-  in
+  else begin
+    Printf.printf "\nx=\n"; Utils.Toolbox.ll_print x;
+    Printf.printf "\nx=\n"; Utils.Toolbox.ll_print y;
+    raise (Error (x, y))
+  end in
   try
     let a =
       let premiere_figure = b 1 @ p 1 @ l 2 @ b 4 in
@@ -50,7 +55,9 @@ let tester() =
                    [9; 7];
                    [15; 8; 6; 4; 3];
                    [5; 2];
-                   [11; 1; 0]] |> Utils.Toolbox.ll_sort)
+                   [11; 1; 0];
+                   [20]]
+           |> Utils.Toolbox.ll_sort)
     in
     Partition.print a;
     Partition.print b;
@@ -78,11 +85,11 @@ let generate_symmetric_group k =
   loop id;
   Hashtbl.length cache
 
-let _ = ()
-  (* tester() *)(* ; *)
-  (* for i = 1 to 8 do *)
-  (*   let module Partition = Diagram (struct let k = k end : sig val k : int end) in *)
-  (*   let open Partition in *)
-  (*   Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i); *)
-  (* done *)(* ; *)
-  (* print id *)
+let _ =
+  tester();
+  for i = 1 to 8 do
+    let module Partition = Diagram (struct let k = k end : sig val k : int end) in
+    let open Partition in
+    Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i);
+  done;
+  print id
