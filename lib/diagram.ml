@@ -2,6 +2,10 @@
    - lors d'une concat l'algo a tendance a prendre l'arete du bas (on pourrait prendre la plus proche / la plus à gauche)
 *)
 
+(* NOTE Warning
+   - les générateurs ne contiennent pas tous exactement tous les sommets
+   - la concat prend-elle en compte les sommets isolés ? (sont-ils ajoutés au résultat ?)
+*)
 module type DIAGRAM = sig
   type t
 
@@ -40,6 +44,13 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
 
+  let check_diagram (d: t) =
+    let h = Hashtbl.create (P.k*2) in
+    let range_test i = range_test i 0 (P.k*2-1) in
+    Toolbox.ll_iter (fun i -> range_test i; Hashtbl.add h i ()) d;
+    List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h))
+    && d = Toolbox.ll_sort d
+
   let s i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
     range_test i 1 (P.k-1);
     let i = i-1 in
@@ -52,21 +63,27 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
   let p i =
     range_test i 1 P.k;
     let i = i-1 in
-    List.init P.k (
+    let rec loop (acc: int list list) =
       function
-      | j when j = i -> []
-      | i -> [i; P.k+i]
-    ) |> List.filter ((<>)[]) |> Toolbox.ll_sort
+      | j when j = P.k -> acc
+      | j when j = i -> loop ([j]::[(P.k+j)]::acc) (j+1)
+      | j -> loop ([j; P.k+j]::acc) (j+1)
+    in
+    loop [] 0
+    |> Toolbox.ll_sort
 
   let b i =
     range_test i 1 (P.k-1);
     let i = i-1 in
-    List.init P.k (
+    let rec loop (acc: int list list) =
       function
-      | j when j = i -> [i; i+1; P.k+i; P.k+i+1]
-      | j when j = i+1 -> []
-      | i -> [i; P.k+i]
-    ) |> List.filter ((<>)[]) |> Toolbox.ll_sort
+      | j when j = P.k -> acc
+      | j when j = i -> loop ([i; i+1; P.k+i; P.k+i+1]::acc) (j+1)
+      | j when j = i+1 -> loop acc (j+1) (* déjà géré au cas précédent *)
+      | i -> loop ([i; P.k+i]::acc) (i+1)
+    in
+    loop [] 0
+    |> Toolbox.ll_sort
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -81,7 +98,10 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       (* Printf.printf "sommets du graphe: \n"; *)
       List.fold_left (fun g cl ->
           (* NOTE `sort cl` pour avoir un seul arc de src vers dst ? *)
-          List.fold_left (function (None, g) -> fun el -> Some el, g | (Some prev, g) -> fun el -> (* Printf.printf "%i %i\n" prev el; *) Some el, G.add_edge g prev el) (None, g) cl |> snd
+          List.fold_left
+            (function (None, g) -> fun el -> Some el, g
+            | (Some prev, g) -> fun el -> (* Printf.printf "%i %i\n" prev el; *) Some el,
+              G.add_edge g prev el) (None, g) cl |> snd
         ) g diagram
 
   let diagram_counter = ref 0
@@ -152,8 +172,12 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       | n when n < 2*P.k -> None
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
-    Toolbox.ll_filter_map f c |> Toolbox.ll_sort
-
+    let res = Toolbox.ll_filter_map f c |> Toolbox.ll_sort in
+    (* if check_diagram res then res *)
+    (* else begin Printf.printf "[ERROR] invariants not maintained\n"; *)
+    (*   Toolbox.ll_print res; *)
+    (*   failwith "[error]" end *)
+    res
   let (@) = concat
 
   let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)

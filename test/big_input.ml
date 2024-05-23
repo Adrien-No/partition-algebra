@@ -52,6 +52,10 @@ let tester() =
                    [5; 2];
                    [11; 1; 0]] |> Utils.Toolbox.ll_sort)
     in
+    Partition.print a;
+    Partition.print b;
+    Partition.print_empty();
+    Partition.print c;
     errorer (concat a b) c
   with Error (d, d') -> print d; print d'; Printf.printf "[ERROR] big_input_tests: not equal" (* we don't really raise so diagrams can be printed *)
 
@@ -74,11 +78,11 @@ let generate_symmetric_group k =
   loop id;
   Hashtbl.length cache
 
-let _ =
-  tester();
-  for i = 1 to 8 do
-    let module Partition = Diagram (struct let k = k end : sig val k : int end) in
-    let open Partition in
-    Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i);
-  done;
-  print id
+let _ = ()
+  (* tester() *)(* ; *)
+  (* for i = 1 to 8 do *)
+  (*   let module Partition = Diagram (struct let k = k end : sig val k : int end) in *)
+  (*   let open Partition in *)
+  (*   Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i); *)
+  (* done *)(* ; *)
+  (* print id *)

@@ -14,7 +14,7 @@ module Edge = struct
    type t = string
    let compare = compare
    let equal = (=)
-   let default = ""
+   let default = "0"
 end
 
 (* a functional/persistent graph *)
@@ -29,6 +29,8 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
 
    include G (* use the graph module from above *)
    let edge_attributes (_a, e, _b) = [`Label e; `Color 4711]
+   (* Node.t * Edge.t * Node.t = E.t *)
+   (* let edge_attributes ((_a, e, _b): Node.t * Edge.t * Node.t) = Printf.printf "attribute: %s\n" e; [`Label e; `Weight (float_of_string e)] *)
    let default_edge_attributes _ = []
    let get_subgraph _ = None
 

@@ -26,4 +26,5 @@ let generators_extended() =
   with Error (d, d') -> print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
 
 let _ =
-  generators_extended()
+  generators_extended();
+  p 1 @ p 2 |> print

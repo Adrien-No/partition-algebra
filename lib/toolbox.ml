@@ -7,6 +7,9 @@ let unconvert k i = (* from [0; 2k-1] to [-k; k]\{0}*)
   else -(i-k+1)
 
 (* ================ basic functions for 'a list list ================ *)
+let ll_iter f =
+  List.iter (List.iter f)
+
 let ll_map f =
   List.map (List.map f)
 
