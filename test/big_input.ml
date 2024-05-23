@@ -85,11 +85,29 @@ let generate_symmetric_group k =
   loop id;
   Hashtbl.length cache
 
+let generate_temperley_lib k =
+  let cache = Hashtbl.create 8 in
+  let rec loop (d: int list list) : unit =
+    if Hashtbl.mem cache d |> not then
+      begin
+        Hashtbl.add cache d ();
+        let nexts =
+          List.init (k-1) Int.succ
+          |> List.map e
+          |> List.map ((@)d)
+        in
+        (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
+        List.iter (fun concated -> loop concated) nexts
+      end
+  in
+  loop id;
+  Hashtbl.length cache
+
 let _ =
-  tester()(* ; *)
-  (* for i = 1 to 8 do *)
-  (*   let module Partition = Diagram (struct let k = k end : sig val k : int end) in *)
-  (*   let open Partition in *)
-  (*   Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i); *)
-  (* done *)(* ; *)
-  (* print id *)
+  tester();
+  for i = 1 to 10 do
+    let module Partition = Diagram (struct let k = k end : sig val k : int end) in
+    let open Partition in
+    Printf.printf "nombre d'elements de temperley-lib de taille %i: %i\n" i (generate_temperley_lib i);
+  done
+  (* ;print id *)

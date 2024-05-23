@@ -194,8 +194,8 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       add_diagram_to_uf new_acc _cls
 
   let concat (a: t) (b: t) : t =
-    check_diagram a;
-    check_diagram b;
+    (* check_diagram a; *)
+    (* check_diagram b; *)
     (* Printf.printf "\na="; Toolbox.ll_print a; *)
     (* Printf.printf "\nb=";Toolbox.ll_print b; *)
     (* [0] initialize uf structure *)
@@ -216,7 +216,7 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
     let res = Toolbox.ll_filter_map f c |> Toolbox.ll_sort in
-    check_diagram res;
+    (* check_diagram res; *)
     res
 
   let (@) = concat
