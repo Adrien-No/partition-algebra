@@ -1,8 +1,12 @@
-let convert k x = (*from [-k; k]\{0} to [0; 2k-1] *)
+(** [convert k i] converts i in a diagram of size 2k from set [-k; k]\{0} to set [0; 2k-1].
+    It correspond to the external (resp internal) numerotation of diagram vertices. *)
+let convert k x =
   if x > 0 then x - 1
   else k - x - 1
 
-let unconvert k i = (* from [0; 2k-1] to [-k; k]\{0}*)
+(** [unconvert k i] converts i in a diagram of size 2k from set [0; 2k-1] to set [-k; k]\{0}.
+    It correspond to the internal (resp external numerotation of diagram vertices. *)
+let unconvert k i =
   if i < k then (i+1)
   else -(i-k+1)
 

@@ -86,10 +86,10 @@ let generate_symmetric_group k =
   Hashtbl.length cache
 
 let _ =
-  tester();
-  for i = 1 to 8 do
-    let module Partition = Diagram (struct let k = k end : sig val k : int end) in
-    let open Partition in
-    Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i);
-  done;
-  print id
+  tester()(* ; *)
+  (* for i = 1 to 8 do *)
+  (*   let module Partition = Diagram (struct let k = k end : sig val k : int end) in *)
+  (*   let open Partition in *)
+  (*   Printf.printf "nombre d'elements du groupe symetrique de taille %i: %i\n" i (generate_symmetric_group i); *)
+  (* done *)(* ; *)
+  (* print id *)

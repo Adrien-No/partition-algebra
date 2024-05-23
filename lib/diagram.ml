@@ -101,13 +101,45 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
         (List.init (P.k*2) Fun.id)(* ((List.init P.k Int.succ) @ (List.init P.k (fun i -> -(i+1)))) *)
       in
       (* Printf.printf "sommets du graphe: \n"; *)
-      List.fold_left (fun g cl ->
-          (* NOTE `sort cl` pour avoir un seul arc de src vers dst ? *)
-          List.fold_left
-            (function (None, g) -> fun el -> Some el, g
-            | (Some prev, g) -> fun el -> (* Printf.printf "%i %i\n" prev el; *) Some el,
-              G.add_edge g prev el) (None, g) cl |> snd
-        ) g diagram
+
+      let rec loop_diagram d (g: Graph.Persistent.Digraph.ConcreteBidirectionalLabeled(Draw.Node)(Draw.Edge).t)  =
+        match d with
+          [] -> g
+        | cl::cls ->
+          let rec loop_cl prev_elem label cl g =
+            match prev_elem with
+            | None ->
+              begin
+                match cl with
+                | [] -> g
+                | elem::cl -> loop_cl (Some elem) elem cl g
+              end
+            | Some prev_elem ->
+            match cl with
+            | [] -> g
+            | [elem] ->
+              let new_label = min label elem in
+              G.add_edge_e g (G.E.create prev_elem (string_of_int new_label) elem) (* pas d'appel récursif car on a fini la liste *)
+            | elem::elems ->
+              let new_label = min label elem in
+              let new_g = G.add_edge g prev_elem elem in (* d'après le match-case précédent, il y a encore au moins un élement dans elems *)
+              loop_cl (Some elem) new_label elems new_g
+          in
+          let new_g = loop_cl None max_int cl g in (* NOTE pas très propre le "max_int" *)
+          loop_diagram cls new_g
+      in
+      loop_diagram diagram g
+      (* List.fold_left (fun g cl -> *)
+      (*     (\* NOTE `sort cl` pour avoir un seul arc de src vers dst ? *\) *)
+      (*     List.fold_left *)
+      (*       (function (None, g) -> fun el -> Some (el, true), g *)
+      (*       | (Some (prev, is_first), g) -> fun el -> (\* is_first allow to know if we print the weight or not *\) *)
+      (*         Some (el, false), *)
+      (*         if is_first then *)
+      (*           G.add_edge_e *)
+      (*         else *)
+      (*           G.add_edge g prev el) (None, g) cl |> snd *)
+      (*   ) g diagram *)
 
   let diagram_counter = ref 0
   let print (diagram: t) =
