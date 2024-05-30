@@ -1,5 +1,6 @@
+(* Modifie les fichiers .dot représentant les diagrammes à afficher de telle sorte à corriger les erreurs typographiques de la bibliothèque ocamlgraph.graphviz provoquant des bugs (mauvaise génération des fichiers .dot)*)
+
 let _ =
-  (* Printf.printf "draw lib called\n"; *)
   let c = ref 0 in
   let continue = ref true in
   while !continue do

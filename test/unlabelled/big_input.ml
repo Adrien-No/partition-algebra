@@ -1,6 +1,6 @@
 Printexc.record_backtrace true
 
-open Utils.Diagram
+open Utils.Unlabelled_diagram
 
 let k = 11
 module Partition = Diagram (struct let k = k end : sig val k : int end)
@@ -103,11 +103,30 @@ let generate_temperley_lib k =
   loop id;
   Hashtbl.length cache
 
+let generate_rock_brauer k =
+  let cache = Hashtbl.create 8 in
+  let rec loop (d: int list list) : unit =
+    if Hashtbl.mem cache d |> not then
+      begin
+        Hashtbl.add cache d ();
+        let nexts =
+          List.concat [(List.init (k-1) Int.succ |> List.map s);
+          (List.init (k) Int.succ |> List.map p);
+          (List.init (k-1) Int.succ |> List.map b)]
+          |> List.map ((@)d)
+        in
+        (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
+        List.iter (fun concated -> loop concated) nexts
+      end
+  in
+  loop id;
+  Hashtbl.length cache
+
 let _ =
   tester();
-  for i = 1 to 10 do
+  for i = 1 to 4 do
     let module Partition = Diagram (struct let k = k end : sig val k : int end) in
     let open Partition in
-    Printf.printf "nombre d'elements de temperley-lib de taille %i: %i\n" i (generate_temperley_lib i);
+    Printf.printf "nombre d'elements de rock brauer de taille %i: %i\n" i (generate_rock_brauer i);
   done
   (* ;print id *)

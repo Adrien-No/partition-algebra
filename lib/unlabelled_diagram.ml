@@ -28,7 +28,7 @@ module type DIAGRAM = sig
   val print_empty : unit -> unit
 end
 
-module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = struct
+module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = struct (* we could remove the type t restriction but useful to make tests easier *)
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
@@ -129,22 +129,11 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
           loop_diagram cls new_g
       in
       loop_diagram diagram g
-      (* List.fold_left (fun g cl -> *)
-      (*     (\* NOTE `sort cl` pour avoir un seul arc de src vers dst ? *\) *)
-      (*     List.fold_left *)
-      (*       (function (None, g) -> fun el -> Some (el, true), g *)
-      (*       | (Some (prev, is_first), g) -> fun el -> (\* is_first allow to know if we print the weight or not *\) *)
-      (*         Some (el, false), *)
-      (*         if is_first then *)
-      (*           G.add_edge_e *)
-      (*         else *)
-      (*           G.add_edge g prev el) (None, g) cl |> snd *)
-      (*   ) g diagram *)
 
   let diagram_counter = ref 0
   let print (diagram: t) =
     let g = to_graph diagram in
-    let file = open_out (Sys.getcwd() ^ "/../../../img/diagram"^string_of_int !diagram_counter ^".dot") in
+    let file = open_out (Sys.getcwd() ^ "/../../../../img/diagram"^string_of_int !diagram_counter ^".dot") in
     incr diagram_counter;
     Draw.dot_as_graph file g P.k
 

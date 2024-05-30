@@ -1,0 +1,11 @@
+(test
+ (name generators)
+ (libraries utils)
+ (modules generators)
+)
+
+(test
+ (name big_input)
+ (libraries utils)
+ (modules big_input)
+)
