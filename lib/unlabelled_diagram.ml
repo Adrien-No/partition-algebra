@@ -6,7 +6,7 @@
    - les générateurs ne contiennent pas tous exactement tous les sommets
    - la concat prend-elle en compte les sommets isolés ? (sont-ils ajoutés au résultat ?)
 *)
-module type DIAGRAM = sig
+module type t = sig
   type t
 
   val of_ill : int list list -> t
@@ -28,7 +28,7 @@ module type DIAGRAM = sig
   val print_empty : unit -> unit
 end
 
-module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = struct (* we could remove the type t restriction but useful to make tests easier *)
+module Make (P: sig val k : int end) : t with type t = int list list = struct (* we could remove the type t restriction but useful to make tests easier *)
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)

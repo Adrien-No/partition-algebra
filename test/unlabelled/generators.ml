@@ -4,7 +4,7 @@ open Utils.Toolbox
 open Utils.Unlabelled_diagram
 
 let k = 3
-module Partition = Diagram (struct let k = k end : sig val k : int end)
+module Partition = Make (struct let k = k end : sig val k : int end)
 open Partition
 
 exception Error of Partition.t * Partition.t
