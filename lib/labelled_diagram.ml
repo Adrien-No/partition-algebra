@@ -25,7 +25,7 @@ module Utils = struct
   type ('a, 'b) t = ('a * 'b list) list
 
   let iter f =
-    List.iter (fun (lab, l) -> List.iter f l)
+    List.iter (fun (_lab, l) -> List.iter f l)
 
   let map f =
     List.map (fun (lab, l) -> lab, List.map f l)
@@ -39,7 +39,7 @@ module Utils = struct
   let sort l =
     List.map (fun (lab, l) -> lab, List.fast_sort compare l) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
 
-  let print l (lab_to_string : 'a -> string) (node_to_string: 'b -> string) =
+  let print (lab_to_string : 'a -> string) (node_to_string: 'b -> string) l =
   let l = List.map (fun (lab, l) -> ("(" ^ lab_to_string lab ^ ") [" ^ (l |> List.map node_to_string |> String.concat "; ") ^ "]")) l in
   "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
 
@@ -48,7 +48,7 @@ end
 module type t = sig
   type t
 
-  (* val of_ill : int list list -> t *)
+  val of_ill : int list list -> t
 
   val id : t
 
@@ -63,6 +63,7 @@ module type t = sig
   val (@) : t -> t -> t
   val (===) : t -> t -> bool
   val print : t -> unit
+  val print_as_string : t -> unit
 
   val print_empty : unit -> unit
 end
@@ -95,11 +96,13 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
   (*   Toolbox.ll_map (fun (_, iil) -> {Toolbox.convert P.k iil}) iil_l |> Toolbox.ll_sort *)
 
   (* creates a labelled diagram from an unlabelled one with PARAM.init_label *)
-  let of_unlabelled = List.map (fun cl -> P.init_label cl, cl)
+  let of_unlabelled (f: int list -> P.label) = List.map (fun cl -> f cl, cl)
+
+  let of_ill ill = Toolbox.ll_map (Toolbox.convert P.k) ill |> of_unlabelled P.init_label |> Utils.sort
 
   let id : t =
     let unlabelled = List.init P.k (fun i -> ([i; P.k+i])) in
-    unlabelled |> of_unlabelled |> Utils.sort
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
@@ -113,7 +116,7 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
     then ()
     else begin
         Printf.printf "[ERROR] invariants not maintained\n";
-        Utils.print d P.lab_to_string P.node_to_string;
+        Utils.print P.lab_to_string P.node_to_string d;
         failwith "[error]" end
 
   let s i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
@@ -126,7 +129,7 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
       | j when j = i+1 -> [j; P.k+j-1]
       | j ->              [j; P.k+j])
     in
-    unlabelled |> of_unlabelled |> Utils.sort
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
   let p i =
     range_test i 1 P.k;
@@ -140,7 +143,7 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
       in
       loop [] 0
     in
-    unlabelled |> of_unlabelled |> Utils.sort
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
   let b i =
     range_test i 1 (P.k-1);
@@ -155,7 +158,7 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
       in
       loop [] 0
     in
-    unlabelled |> of_unlabelled |> Utils.sort
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -252,6 +255,7 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
     (* check_diagram b; *)
     (* Printf.printf "\na="; Toolbox.ll_print a; *)
     (* Printf.printf "\nb=";Toolbox.ll_print b; *)
+
     (* [0] initialize uf structure *)
     let uf = Uf.create (3*P.k) in
 
@@ -259,17 +263,39 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
     let uf = add_diagram_to_uf uf a in
 
     (* [2] unify depending on b *)
-    let uf = add_diagram_to_uf uf (Toolbox.ll_map ((+)P.k) b) in
+    let uf = add_diagram_to_uf uf (Utils.map ((+)P.k) b) in
 
     (* [3] extract C from uf *)
     let c = ill_of_uf uf (3*P.k) in
+
+    (* [4] compute diagram labels*)
+
+    (* Theses arrays stores labels of each elts of diagrams *)
+    let a_labels = Array.make (2*P.k) None in
+    List.iter (fun (lab, l) -> List.iter (fun x -> a_labels.(x) <- Some lab) l) a;
+
+    let b_labels = Array.make (2*P.k) None in
+    List.iter (fun (lab, l) -> List.iter (fun x -> b_labels.(x) <- Some lab) l) b;
+
+    let get_c_cl_label (cl: int list) =
+      (* cl is the final composante in c *)
+      let labels = List.fold_left (fun acc n ->
+          match n with
+          | n when n < P.k -> Option.get a_labels.(n)::acc
+          | n when n < 2*P.k -> acc
+          | n -> Option.get b_labels.(n-P.k)::acc
+        ) [] cl in
+      P.law labels
+    in
+
     let f =
       function
       | n when n <   P.k -> Some n
       | n when n < 2*P.k -> None
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
-    let res = Toolbox.ll_filter_map f c |> Toolbox.ll_sort in
+
+    let res = Toolbox.ll_filter_map f c |> of_unlabelled get_c_cl_label |> Utils.sort in
     (* check_diagram res; *)
     res
 
@@ -278,6 +304,8 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
   let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
     (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
      d = d'
+
+  let print_as_string = Utils.print P.lab_to_string P.node_to_string
 
   let e i = b i @ p i @ p (i+1) @ b i (* déjà triés car les concat et autres gen sont triées *)
 

@@ -1,10 +1,17 @@
-Printexc.record_backtrace true
+open Utils.Labelled_diagram
 
-open Utils.Toolbox
-open Utils.Unlabelled_diagram
+module P:PARAM = struct
+  type label = int
+  type node = int
+  let k = 3
+  let law = List.fold_left min max_int
+  let init_label = law
 
-let k = 3
-module Partition = Make (struct let k = k end : sig val k : int end)
+  let lab_to_string = string_of_int
+  let node_to_string = string_of_int
+end
+
+module Partition = Make (P:PARAM)
 open Partition
 
 exception Error of Partition.t * Partition.t
@@ -23,8 +30,8 @@ let generators_extended() =
     errorer (r 2) (of_ill [[1; -1]; [-2; 3]; [2]; [-3]]);
 
     (* #### fin de l'écriture des tests #### *)
-  with Error (d, d') -> print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
+  with Error (d, d') -> print_as_string d; print_as_string d'; print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
 
-(* let _ = *)
-(*   generators_extended(); *)
-(*   p 1 @ p 2 |> print *)
+let _ =
+  generators_extended();
+  p 1 @ p 2 |> print

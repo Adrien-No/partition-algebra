@@ -122,11 +122,11 @@ let generate_rock_brauer k =
   loop id;
   Hashtbl.length cache
 
-let _ =
-  tester();
-  for i = 1 to 4 do
-    let module Partition = Make (struct let k = k end : sig val k : int end) in
-    let open Partition in
-    Printf.printf "nombre d'elements de rock brauer de taille %i: %i\n" i (generate_rock_brauer i);
-  done
-  (* ;print id *)
+(* let _ = *)
+(*   tester(); *)
+(*   for i = 1 to 4 do *)
+(*     let module Partition = Make (struct let k = k end : sig val k : int end) in *)
+(*     let open Partition in *)
+(*     Printf.printf "nombre d'elements de rock brauer de taille %i: %i\n" i (generate_rock_brauer i); *)
+(*   done *)
+(*   (\* ;print id *\) *)
