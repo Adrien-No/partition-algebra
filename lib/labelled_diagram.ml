@@ -1,26 +1,4 @@
-(* module Utils = struct *)
-(*   type ('a, 'b) cl = {label: 'a; mutable elts: 'b list} (\* degueu de faire avec mutable ? + structure pas optis pour les fcts suivances ?*\) *)
-(*   type ('a, 'b) t = ('a, 'b) cl list *)
-
-(*   let iter f = *)
-(*     List.iter (fun cl -> List.iter f cl.elts) *)
-
-(*   let map f = *)
-(*     List.map (fun cl -> cl.elts <- List.map f cl.elts; cl) *)
-
-(*   let fold f init = *)
-(*     List.fold_left (fun init cl -> List.fold_left f init cl.elts) init *)
-
-(*   let filter f l = *)
-(*     List.map (fun cl -> cl.elts <- List.filter f cl.elts; cl) l |> List.filter (fun cl -> cl.elts <> []) *)
-
-(*   let filter_map f l = *)
-(*     map f l *)
-(*     |> filter ((<>)None) *)
-(*     |> map (fun cl -> cl.elts <- Option.get cl.elts; cl) *)
-(* end *)
-
-(* Les fonctions utilitaires sur les diagrammes, utilisés par le foncteur Make *)
+(* auxiliar functions on Diagrams, used by functor Make *)
 module Utils = struct
   type ('a, 'b) t = ('a * 'b list) list
 
@@ -30,11 +8,21 @@ module Utils = struct
   let map f =
     List.map (fun (lab, l) -> lab, List.map f l)
 
+  let map_all f =
+    List.map (fun (lab, l) -> f lab, List.map f l)
+  (* let map_labels f = *)
+  (*   List.map (fun (lab, l) -> f lab, l) *)
+
   let fold f init =
     List.fold_left (fun init (_lab, l) -> List.fold_left f init l) init
 
   let filter f l =
     List.map (fun (lab, l) -> lab, List.filter f l) l |> List.filter (fun (_,l) -> l <>[])
+
+  let filter_map f l =
+    map f l
+    |> filter ((<>)None)
+    |> map Option.get
 
   let sort l =
     List.map (fun (lab, l) -> lab, List.fast_sort compare l) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
@@ -49,7 +37,7 @@ module type t = sig
   type t
 
   val of_ill : int list list -> t
-
+  val unsafe_create : t -> t
   val id : t
 
   val s : int -> t
@@ -68,7 +56,6 @@ module type t = sig
   val print_empty : unit -> unit
 end
 
-
 module type PARAM = sig
   type label
   type node = int
@@ -80,7 +67,7 @@ module type PARAM = sig
   val node_to_string : node -> string
 end
 
-module Make (P: PARAM (* with type label = int and type node = int *)) : t  = struct
+module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.node list) list = struct
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
@@ -99,6 +86,8 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
   let of_unlabelled (f: int list -> P.label) = List.map (fun cl -> f cl, cl)
 
   let of_ill ill = Toolbox.ll_map (Toolbox.convert P.k) ill |> of_unlabelled P.init_label |> Utils.sort
+
+  let unsafe_create (d : t) : t = Utils.map (Toolbox.convert P.k) d (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
 
   let id : t =
     let unlabelled = List.init P.k (fun i -> ([i; P.k+i])) in
@@ -207,6 +196,8 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
 
   let print_empty () = print []
 
+  let print_as_string d = Utils.print P.lab_to_string P.node_to_string ((* Utils.map_all (Toolbox.unconvert P.k) *) d)
+
   open Uf_persistant
 
   (** [ill_of_uf uf k] Queries the [uf] structure with integer from 0 to 2[k]-1, to rebuild the partition of [0; 2k-1] as an int list list *)
@@ -295,17 +286,21 @@ module Make (P: PARAM (* with type label = int and type node = int *)) : t  = st
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
 
-    let res = Toolbox.ll_filter_map f c |> of_unlabelled get_c_cl_label |> Utils.sort in
+    let toobig_res = of_unlabelled get_c_cl_label c in
+    let good_size_res = Utils.filter_map f toobig_res in
+    (* print_as_string good_size_res; *)
+    Utils.sort good_size_res
+    (* let res = Toolbox.ll_filter_map f c in *)
+    (* Printf.printf "res=\n"; Toolbox.ll_print res; print_newline(); *)
+    (* let res = of_unlabelled get_c_cl_label res in *)
+    (* Utils.sort (Utils.map f ) *)
     (* check_diagram res; *)
-    res
 
   let (@) = concat
 
   let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
     (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
      d = d'
-
-  let print_as_string = Utils.print P.lab_to_string P.node_to_string
 
   let e i = b i @ p i @ p (i+1) @ b i (* déjà triés car les concat et autres gen sont triées *)
 
