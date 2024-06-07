@@ -32,7 +32,7 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
      let label =
        if e = "" then ""
        else
-           e |> int_of_string |> Toolbox.unconvert P.k |> abs |> string_of_int
+           e |> int_of_string (* |> Toolbox.unconvert P.k |> abs *) |> string_of_int
     in
      [`Label label; `Color 4711]
    (* Node.t * Edge.t * Node.t = E.t *)

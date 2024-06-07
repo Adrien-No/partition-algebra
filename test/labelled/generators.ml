@@ -38,29 +38,31 @@ let errorer x y =
   else raise (Error (x, y))
 
 let test_adder () =
-  let a = id in
-  let b = s 1 in
-  let c : Partition.t = unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])] (* |> List.map (fun (label, l) -> convert P.k label, l) *) in
+  let a = e 1 in
+  let b = e 2 in
+  let c' = unsafe_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])] in
   print a;
   print b;
   print (a @ b);
-  print c
+  print c'
 
 let generators_extended() =
   try
     (* #### début de l'écriture des tests #### *)
-    Printf.printf "test 0\n";errorer (s 1) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
-    Printf.printf "test 1\n";errorer (s 1 @ s 1) (unsafe_create [(1, [1; -1]); (1, [2; -2]); (3, [3; -3])]); (* a case where a label is reduced *)
-    Printf.printf "test 2\n";errorer (p 1) (of_ill [[1]; [-1]; [2; -2]; [3; -3]]);
-    Printf.printf "test 3\n";errorer (s 1 @ id) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
-    Printf.printf "test 4\n";errorer (id @ s 1) (of_ill [[1; -2]; [2; -1]; [3; -3]]);
-    Printf.printf "test 5\n";errorer (l 1) (of_ill [[1; -2]; [3; -3]; [2]; [-1]]);
-    (* errorer (l 2) (of_ill [[1; -1]; [2; -3]; [-2]; [3]]); *)
-    (* errorer (e 1) (of_ill [[1; 2]; [-1; -2]; [3; -3]]); *)
-    (* errorer (e 2) (of_ill [[1; -1]; [2; 3]; [-2; -3]]); *)
-    (* errorer (r 1) (of_ill [[-1; 2]; [3; -3]; [1]; [-2]]); *)
-    (* errorer (r 2) (of_ill [[1; -1]; [-2; 3]; [2]; [-3]]) *)
-
+    errorer (s 1) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
+    errorer (s 1 @ s 1) (unsafe_create [(1, [1; -1]); (1, [2; -2]); (3, [3; -3])]); (* a case where a label is reduced *)
+    errorer (p 1) (of_ill [[1]; [-1]; [2; -2]; [3; -3]]);
+    errorer (s 1 @ id) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
+    errorer (id @ s 1) (of_ill [[1; -2]; [2; -1]; [3; -3]]);
+    errorer (l 1) (of_ill [[1; -2]; [3; -3]; [2]; [-1]]);
+    errorer (l 2) (of_ill [[1; -1]; [2; -3]; [-2]; [3]]);
+    errorer (e 1) (of_ill [[1; 2]; [-1; -2]; [3; -3]]);
+    errorer (e 2) (of_ill [[1; -1]; [2; 3]; [-2; -3]]);
+    errorer (r 1) (of_ill [[-1; 2]; [3; -3]; [1]; [-2]]);
+    errorer (r 2) (of_ill [[1; -1]; [-2; 3]; [2]; [-3]]);
+    errorer (l 1 @ r 1) (p 2);
+    errorer (r 1 @ l 1) (unsafe_create [(1, [1]); (1, [-1]); (1, [2; -2]); (3, [3; -3])]);
+    errorer (e 1 @ e 2) (unsafe_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])])
     (* #### fin de l'écriture des tests #### *)
   with Error (d, d') -> print_as_string d; print_as_string d'; print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
 

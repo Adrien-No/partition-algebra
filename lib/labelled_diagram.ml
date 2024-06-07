@@ -92,7 +92,7 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
 
   let of_ill ill = Toolbox.ll_map (Toolbox.internalize P.k) ill |> of_unlabelled P.init_label |> Utils.sort
 
-  let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
+  let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d |> Utils.sort (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
 
   let id : t =
     let unlabelled = List.init P.k (fun i -> ([i; P.k+i])) in
