@@ -31,8 +31,8 @@ module Utils = struct
     List.map (fun (lab, l) -> lab, List.fast_sort compare l) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
 
   let print (lab_to_string : 'a -> string) (node_to_string: 'b -> string) l =
-  let l = List.map (fun (lab, l) -> ("(" ^ lab_to_string lab ^ ") [" ^ (l |> List.map node_to_string |> String.concat "; ") ^ "]")) l in
-  "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
+    let l = List.map (fun (lab, l) -> ("(" ^ lab_to_string lab ^ ") [" ^ (l |> List.map node_to_string |> String.concat "; ") ^ "]")) l in
+    "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
 
 end
 
@@ -41,6 +41,14 @@ module type t = sig
 
   val of_ill : int list list -> t
   val unsafe_create : t -> t
+
+  val concat : t -> t -> t
+
+  val print : t -> unit
+  val print_as_string : t -> unit
+
+  val print_empty : unit -> unit
+
   val id : t
 
   val s : int -> t
@@ -50,13 +58,9 @@ module type t = sig
   val l : int -> t
   val r : int -> t
 
-  val concat : t -> t -> t
-  val (@) : t -> t -> t
   val (===) : t -> t -> bool
-  val print : t -> unit
-  val print_as_string : t -> unit
+  val (@) : t -> t -> t
 
-  val print_empty : unit -> unit
 end
 
 module type PARAM = sig
@@ -82,21 +86,12 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   type t = cl list (* type of a labelled diagram *)
   and cl = P.label * P.node list (* type of a equiv class of a diagram *)
 
-  (* (\** unsafe creation from \[-k;k\]\{0} to \[0; 2*k-1\]*\) *)
-  (* let of_iil_l iil_l = *)
-  (*   Utils.map *)
-  (*   Toolbox.ll_map (fun (_, iil) -> {Toolbox.convert P.k iil}) iil_l |> Toolbox.ll_sort *)
-
   (* creates a labelled diagram from an unlabelled one with PARAM.init_label *)
   let of_unlabelled (f: int list -> P.label) = List.map (fun cl -> f cl, cl)
 
   let of_ill ill = Toolbox.ll_map (Toolbox.internalize P.k) ill |> of_unlabelled P.init_label |> Utils.sort
 
   let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d |> Utils.sort (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
-
-  let id : t =
-    let unlabelled = List.init P.k (fun i -> ([i; P.k+i])) in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
@@ -106,63 +101,22 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
     let range_test i = range_test i 0 (P.k*2-1) in
     Utils.iter (fun i -> range_test i; Hashtbl.add h i ()) d;
     if List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h))
-      && d = Utils.sort d
+    && d = Utils.sort d
     then ()
     else begin
-        Printf.printf "[ERROR] invariants not maintained\n";
-        Utils.print P.lab_to_string P.node_to_string d;
-        failwith "[error]" end
-
-  let s i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
-    range_test i 1 (P.k-1);
-    let unlabelled =
-    let i = i-1 in
-    List.init P.k (
-      function
-      | j when j = i   -> [j  ; P.k+j+1]
-      | j when j = i+1 -> [j; P.k+j-1]
-      | j ->              [j; P.k+j])
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
-
-  let p i =
-    range_test i 1 P.k;
-    let unlabelled =
-      let i = i-1 in
-      let rec loop (acc: int list list) =
-        function
-        | j when j = P.k -> acc
-        | j when j = i -> loop ([j]::[(P.k+j)]::acc) (j+1)
-        | j -> loop ([j; P.k+j]::acc) (j+1)
-      in
-      loop [] 0
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
-
-  let b i =
-    range_test i 1 (P.k-1);
-    let unlabelled =
-      let i = i-1 in
-      let rec loop (acc: int list list) =
-        function
-        | j when j = P.k -> acc
-        | j when j = i -> loop ([i; i+1; P.k+i; P.k+i+1]::acc) (j+1)
-        | j when j = i+1 -> loop acc (j+1) (* déjà géré au cas précédent *)
-        | i -> loop ([i; P.k+i]::acc) (i+1)
-      in
-      loop [] 0
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
+      Printf.printf "[ERROR] invariants not maintained\n";
+      Utils.print P.lab_to_string P.node_to_string d;
+      failwith "[error]" end
 
   let to_graph (diagram: t) =
     let open Draw in
     if diagram = [] then G.empty (* hack un peu moche pour afficher au besoin un espacement entre des diagrams *)
     else
       let g = (* G.empty *) (* test avec seulement les sommets utilisés *)
-      List.fold_left
-        G.add_vertex
-        G.empty
-        (List.init (P.k*2) Fun.id)(* ((List.init P.k Int.succ) @ (List.init P.k (fun i -> -(i+1)))) *)
+        List.fold_left
+          G.add_vertex
+          G.empty
+          (List.init (P.k*2) Fun.id)(* ((List.init P.k Int.succ) @ (List.init P.k (fun i -> -(i+1)))) *)
       in
       (* Printf.printf "sommets du graphe: \n"; *)
 
@@ -179,13 +133,13 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
                 | elem::cl -> loop_cl (Some elem) cl g
               end
             | Some prev_elem ->
-            match cl with
-            | [] -> g
-            | [elem] ->
-              G.add_edge_e g (G.E.create prev_elem (P.lab_to_string label) elem) (* pas d'appel récursif car on a fini la liste *)
-            | elem::elems ->
-              let new_g = G.add_edge g prev_elem elem in (* d'après le match-case précédent, il y a encore au moins un élement dans elems *)
-              loop_cl (Some elem) elems new_g
+              match cl with
+              | [] -> g
+              | [elem] ->
+                G.add_edge_e g (G.E.create prev_elem (P.lab_to_string label) elem) (* pas d'appel récursif car on a fini la liste *)
+              | elem::elems ->
+                let new_g = G.add_edge g prev_elem elem in (* d'après le match-case précédent, il y a encore au moins un élement dans elems *)
+                loop_cl (Some elem) elems new_g
           in
           let new_g = loop_cl None cl g in
           loop_diagram cls new_g
@@ -247,10 +201,6 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
       add_diagram_to_uf new_acc _cls
 
   let concat (a: t) (b: t) : t =
-    (* check_diagram a; *)
-    (* check_diagram b; *)
-    (* Printf.printf "\na="; Toolbox.ll_print a; *)
-    (* Printf.printf "\nb=";Toolbox.ll_print b; *)
 
     (* [0] initialize uf structure *)
     let uf = Uf.create (3*P.k) in
@@ -265,7 +215,6 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
     let c = ill_of_uf uf (3*P.k) in
 
     (* [4] compute diagram labels*)
-
     (* Theses arrays stores labels of each elts of diagrams *)
     let a_labels = Array.make (2*P.k) None in
     List.iter (fun (lab, l) -> List.iter (fun x -> a_labels.(x) <- Some lab) l) a;
@@ -283,72 +232,60 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
         ) [] cl in
       P.law labels
     in
-
     let f =
       function
       | n when n <   P.k -> Some n
       | n when n < 2*P.k -> None
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
-
     let toobig_res = of_unlabelled get_c_cl_label c in
     let good_size_res = Utils.filter_map f toobig_res in
-    (* print_as_string good_size_res; *)
     Utils.sort good_size_res
-    (* let res = Toolbox.ll_filter_map f c in *)
-    (* Printf.printf "res=\n"; Toolbox.ll_print res; print_newline(); *)
-    (* let res = of_unlabelled get_c_cl_label res in *)
-    (* Utils.sort (Utils.map f ) *)
-    (* check_diagram res; *)
+
+  let generator_builder i imax (f: int -> int list list) =
+    range_test i 1 imax;
+    let unlabelled =
+      let rec loop (acc: int list list) j =
+        if j = P.k then acc
+        else
+          loop (f j @ acc) (j+1)
+      in
+      loop [] 0
+    in
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
+
+  let id = generator_builder P.k P.k (fun i -> [[i; P.k+i]])
+
+  let s i = generator_builder i (P.k-1) (function
+      | j when j = i-1   -> [[j  ; P.k+j+1]]
+      | j when j = i -> [[j; P.k+j-1]]
+      | j ->              [[j; P.k+j]])
+
+  let p i = generator_builder i P.k (function
+      | j when j = i-1 -> [[j]; [P.k+j]]
+      | j -> [[j; P.k+j]])
+
+  let b i = generator_builder i (P.k-1) (function
+      | j when j = i-1 -> [[i; i+1; P.k+i; P.k+i+1]]
+      | j when j = i -> []
+      | i -> [[i; P.k+i]])
+
+  let e i = generator_builder i (P.k-1) (function
+      | j when j = i-1 -> [[j; j+1];[P.k+j; P.k+j+1]]
+      | j when j = i -> []
+      | j -> [[j; P.k+j]])
+
+  let l i = generator_builder i (P.k-1) (function
+      | j when j = i-1 -> [[j+P.k];[j+1];[j; P.k+j+1]]
+      | j when j = i -> []
+      | j -> [[j; P.k+j]])
+
+  let r i = generator_builder i (P.k-1) (function
+      | j when j = i-1 -> [[j+P.k+1];[j];[j+1; P.k+j]]
+      | j when j = i -> []
+      | j -> [[j; P.k+j]])
 
   let (@) = concat
 
-  let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
-    (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
-     d = d'
-
-  let e i =
-    range_test i 1 (P.k-1);
-    let unlabelled =
-      let i = i-1 in
-      let rec loop (acc: int list list) =
-        function
-        | j when j = P.k -> acc
-        | j when j = i -> loop ([j; j+1]::[P.k+j; P.k+j+1]::acc) (j+1)
-        | j when j = i+1 -> loop acc (j+1)
-        | j -> loop ([j; P.k+j]::acc) (j+1)
-      in
-      loop [] 0
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
-
-  let l i =
-    range_test i 1 (P.k-1);
-    let unlabelled =
-      let i = i-1 in
-      let rec loop (acc: int list list) =
-        function
-        | j when j = P.k -> acc
-        | j when j = i -> loop ([j+P.k]::[j+1]::[j; P.k+j+1]::acc) (j+1)
-        | j when j = i+1 -> loop acc (j+1)
-        | j -> loop ([j; P.k+j]::acc) (j+1)
-      in
-      loop [] 0
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
-
-  let r i =
-    range_test i 1 (P.k-1);
-    let unlabelled =
-      let i = i-1 in
-      let rec loop (acc: int list list) =
-        function
-        | j when j = P.k -> acc
-        | j when j = i -> loop ([j+P.k+1]::[j]::[j+1; P.k+j]::acc) (j+1)
-        | j when j = i+1 -> loop acc (j+1)
-        | j -> loop ([j; P.k+j]::acc) (j+1)
-      in
-      loop [] 0
-    in
-    unlabelled |> of_unlabelled P.init_label |> Utils.sort
+  let (===) = (=) (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
 end
