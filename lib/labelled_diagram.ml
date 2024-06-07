@@ -307,10 +307,48 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
     (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
      d = d'
 
-  let e i = b i @ p i @ p (i+1) @ b i (* déjà triés car les concat et autres gen sont triées *)
+  let e i =
+    range_test i 1 (P.k-1);
+    let unlabelled =
+      let i = i-1 in
+      let rec loop (acc: int list list) =
+        function
+        | j when j = P.k -> acc
+        | j when j = i -> loop ([j; j+1]::[P.k+j; P.k+j+1]::acc) (j+1)
+        | j when j = i+1 -> loop acc (j+1)
+        | j -> loop ([j; P.k+j]::acc) (j+1)
+      in
+      loop [] 0
+    in
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
-  let l i = s i @ p i
+  let l i =
+    range_test i 1 (P.k-1);
+    let unlabelled =
+      let i = i-1 in
+      let rec loop (acc: int list list) =
+        function
+        | j when j = P.k -> acc
+        | j when j = i -> loop ([j+P.k]::[j+1]::[j; P.k+j+1]::acc) (j+1)
+        | j when j = i+1 -> loop acc (j+1)
+        | j -> loop ([j; P.k+j]::acc) (j+1)
+      in
+      loop [] 0
+    in
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 
-  let r i = p i @ s i
+  let r i =
+    range_test i 1 (P.k-1);
+    let unlabelled =
+      let i = i-1 in
+      let rec loop (acc: int list list) =
+        function
+        | j when j = P.k -> acc
+        | j when j = i -> loop ([j+P.k+1]::[j]::[j+1; P.k+j]::acc) (j+1)
+        | j when j = i+1 -> loop acc (j+1)
+        | j -> loop ([j; P.k+j]::acc) (j+1)
+      in
+      loop [] 0
+    in
+    unlabelled |> of_unlabelled P.init_label |> Utils.sort
 end
-

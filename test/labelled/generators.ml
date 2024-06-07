@@ -54,7 +54,7 @@ let generators_extended() =
     Printf.printf "test 2\n";errorer (p 1) (of_ill [[1]; [-1]; [2; -2]; [3; -3]]);
     Printf.printf "test 3\n";errorer (s 1 @ id) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
     Printf.printf "test 4\n";errorer (id @ s 1) (of_ill [[1; -2]; [2; -1]; [3; -3]]);
-    Printf.printf "test 5\n";errorer (l 1) (unsafe_create [[1; -2]; [3; -3]; [2]; [-1]]);
+    Printf.printf "test 5\n";errorer (l 1) (of_ill [[1; -2]; [3; -3]; [2]; [-1]]);
     (* errorer (l 2) (of_ill [[1; -1]; [2; -3]; [-2]; [3]]); *)
     (* errorer (e 1) (of_ill [[1; 2]; [-1; -2]; [3; -3]]); *)
     (* errorer (e 2) (of_ill [[1; -1]; [2; 3]; [-2; -3]]); *)
