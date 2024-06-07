@@ -1,3 +1,6 @@
+(* NOTE generators e, l and r are "MACROS" i.e we labelize them as concat of generators s, p and b. *)
+(* e.g : with the generator l, cl [2] will have label 1 bc l 1 = s 1 @ p 1*)
+
 (* auxiliar functions on Diagrams, used by functor Make *)
 module Utils = struct
   type ('a, 'b) t = ('a * 'b list) list
@@ -73,6 +76,8 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
   (* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
 
+  (* NOTE par contre, puisque les labels sont en valeur absolue, on peut directement numéroter les arêtes de 1 à k ! *)
+
   (* Les générateurs sont numérotés en externe de 1 à k *)
   type t = cl list (* type of a labelled diagram *)
   and cl = P.label * P.node list (* type of a equiv class of a diagram *)
@@ -85,9 +90,9 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   (* creates a labelled diagram from an unlabelled one with PARAM.init_label *)
   let of_unlabelled (f: int list -> P.label) = List.map (fun cl -> f cl, cl)
 
-  let of_ill ill = Toolbox.ll_map (Toolbox.convert P.k) ill |> of_unlabelled P.init_label |> Utils.sort
+  let of_ill ill = Toolbox.ll_map (Toolbox.internalize P.k) ill |> of_unlabelled P.init_label |> Utils.sort
 
-  let unsafe_create (d : t) : t = Utils.map (Toolbox.convert P.k) d (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
+  let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
 
   let id : t =
     let unlabelled = List.init P.k (fun i -> ([i; P.k+i])) in

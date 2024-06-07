@@ -1,15 +1,18 @@
-(** [convert k i] converts i in a diagram of size 2k from set [-k; k]\{0} to set [0; 2k-1].
+(** [internalize k i] converts i in a diagram of size 2k from set [-k; k]\{0} to set [0; 2k-1].
     It correspond to the external (resp internal) numerotation of diagram vertices. *)
-let convert k x =
+let internalize k x =
   if x > 0 then x - 1
   else k - x - 1
 
-(** [unconvert k i] converts i in a diagram of size 2k from set [0; 2k-1] to set [-k; k]\{0}.
-    It correspond to the internal (resp external numerotation of diagram vertices. *)
-let unconvert k i =
+(** [externalize k i] converts i in a diagram of size 2k from set [0; 2k-1] to set [-k; k]\{0}.
+    It correspond to the internal (resp external) numerotation of diagram vertices. *)
+let externalize k i =
   if i < k then (i+1)
   else -(i-k+1)
 
+(* aliases *)
+let convert = internalize
+let unconvert = externalize
 (* ================ basic functions for 'a list list ================ *)
 let ll_iter f =
   List.iter (List.iter f)
