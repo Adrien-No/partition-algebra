@@ -66,8 +66,8 @@ let generators_extended() =
     (* #### fin de l'écriture des tests #### *)
   with Error (d, d') -> print_as_string d; print_as_string d'; print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (* we don't really raise so diagrams can be printed *)
 
-let _ =
-  (* test_adder(); *)
-  generators_extended();
-  print_empty()
-  (* p 1 @ p 2 |> print *)
+(* let _ = *)
+(*   (\* test_adder(); *\) *)
+(*   generators_extended(); *)
+(*   print_empty() *)
+(*   (\* p 1 @ p 2 |> print *\) *)

@@ -266,7 +266,7 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
       | j -> [[j; P.k+j]])
 
   let b i = generator_builder i (P.k-1) (function
-      | j when j = i-1 -> [[i; i+1; P.k+i; P.k+i+1]]
+      | j when j = i-1 -> [[j; j+1; P.k+j; P.k+j+1]]
       | j when j = i -> []
       | i -> [[i; P.k+i]])
 

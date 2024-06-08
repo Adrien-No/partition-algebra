@@ -1,5 +1,13 @@
 (test
- (name generators)
+ (name subalgebras)
  (libraries utils)
- (modules generators)
+ (modules subalgebras)
 )
+
+
+; (test
+;  (name generators)
+;  (libraries utils)
+;  (modules generators)
+; )
+
