@@ -1,3 +1,5 @@
+(* not so much used since the main code is on labelled_diagram.. we could maybe divided between theses two files *)
+
 let generate_generators f imax =
   List.init imax Int.succ
   |> List.map f
@@ -21,21 +23,3 @@ let unlabelled (module Partition: Unlabelled_diagram.t with type t = int list li
   in
   loop id;
   Hashtbl.length cache
-
-let labelled (module Partition: Labelled_diagram.t with type t = (int * int list) list)
-    (generators_f: ((int -> (int * int list) list) * int) list) : int * int =
-  let generators = List.concat (List.map (fun (f, imax) -> gg f imax) generators_f) in
-
-  let open Partition in
-  let cache = Hashtbl.create (List.length generators) in
-  let rec loop (d: (int *int list) list) : unit =
-    if Hashtbl.mem cache d |> not then
-      begin
-        Hashtbl.add cache d ();
-        let nexts = List.map ((@)d) generators in
-        (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
-        List.iter (fun concated -> loop concated) nexts
-      end
-  in
-  loop id;
-  Hashtbl.length cache, List.length generators

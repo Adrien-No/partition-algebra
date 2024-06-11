@@ -1,6 +1,6 @@
 Printexc.record_backtrace true
 
-open Utils.Unlabelled_diagram
+open Lib.Unlabelled_diagram
 
 let k = 11
 module Partition = Make (struct let k = k end : sig val k : int end)
@@ -28,8 +28,8 @@ let tester() =
   let errorer x y =
   if x === y then () (* l'égalité correspond à celle dans la partition *)
   else begin
-    Printf.printf "\nx=\n"; Utils.Toolbox.ll_print x;
-    Printf.printf "\nx=\n"; Utils.Toolbox.ll_print y;
+    Printf.printf "\nx=\n"; Lib.Toolbox.ll_print x;
+    Printf.printf "\nx=\n"; Lib.Toolbox.ll_print y;
     raise (Error (x, y))
   end in
   try
@@ -57,7 +57,7 @@ let tester() =
                    [5; 2];
                    [11; 1; 0];
                    [20]]
-           |> Utils.Toolbox.ll_sort)
+           |> Lib.Toolbox.ll_sort)
     in
     Partition.print a;
     Partition.print b;

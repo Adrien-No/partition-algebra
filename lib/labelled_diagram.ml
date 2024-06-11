@@ -37,10 +37,10 @@ module Utils = struct
 end
 
 module type t = sig
-  type t
+  type t (* = (label * node list) list *)
 
-  val of_ill : int list list -> t
-  val unsafe_create : t -> t
+  (* val of_ill : int list list -> t *)
+  (* val unsafe_create : t -> t *)
 
   val concat : t -> t -> t
 
@@ -60,22 +60,24 @@ module type t = sig
 
   val (===) : t -> t -> bool
   val (@) : t -> t -> t
-
-  val is_okada_diagram : t -> bool
 end
 
 module type PARAM = sig
   type label
-  type node = int
+  type node = int (* nodes should be finitely enumerable so without loss of generality let's use integers *)
+  type t = (label * node list) list
+   (* le même t que t.t *)
   val k : int
   val law : label list -> label (* law is the composition law on labels used to determine the new label after concat *)
   val init_label : node list -> label (* used to init labels of cls of a generator *)
 
+  val check : t -> bool
+  val generate : ( t -> t -> t ) -> ((int -> t) * int) list -> int * int
   val lab_to_string : label -> string
   val node_to_string : node -> string
 end
 
-module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.node list) list = struct
+module Make (P: PARAM) : (t with type t = P.t) = struct
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
@@ -84,15 +86,13 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   (* NOTE par contre, puisque les labels sont en valeur absolue, on peut directement numéroter les arêtes de 1 à k ! *)
 
   (* Les générateurs sont numérotés en externe de 1 à k *)
-  type t = cl list (* type of a labelled diagram *)
-  and cl = P.label * P.node list (* type of a equiv class of a diagram *)
-
+  type t = P.t
   (* creates a labelled diagram from an unlabelled one with PARAM.init_label *)
   let of_unlabelled (f: int list -> P.label) = List.map (fun cl -> f cl, cl)
 
-  let of_ill ill = Toolbox.ll_map (Toolbox.internalize P.k) ill |> of_unlabelled P.init_label |> Utils.sort
+  (* let of_ill ill = Toolbox.ll_map (Toolbox.internalize P.k) ill |> of_unlabelled P.init_label |> Utils.sort *)
 
-  let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d |> Utils.sort (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
+  (* let unsafe_create (d : t) : t = Utils.map (Toolbox.internalize P.k) d |> Utils.sort *) (* labels has already been converted (bc here we have generality for label type, but in example it's an int) *)
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
@@ -108,26 +108,6 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
       Printf.printf "[ERROR] invariants not maintained\n";
       Utils.print P.lab_to_string P.node_to_string d;
       failwith "[error]" end
-
-  let is_okada_diagram (d: t) =
-    let d = Utils.map (Toolbox.externalize P.k) d in (* mieux de convertir pour utiliser directement les propriétés telles que définies *)
-    let is_non_crossing (x, y) (x', y')=
-        let x , y  = min (abs x)  (abs y ), max (abs x ) (abs y)
-        and x', y' = min (abs x') (abs y'), max (abs x') (abs y') in
-        if x <= y && x' <= y' || x >= y && x' >= y' then true else failwith (Printf.sprintf "edges (%i, %i) and (%i, %i) are crossing" x y x' y')
-    and label_condition = function (lab, [x; y]) -> 1 <= lab && lab <= (min (abs x) (abs y)) | _ -> failwith "label_conditions: couplage imparfait"
-    and parity_condition = function (lab, [x; y]) -> lab mod 2 = (min (abs x) (abs y)) mod 2 | _ -> failwith "parity_conditions: couplage imparfait"
-    and nested (lab, (x, y)) (lab', (x', y')) =
-      let a, b = min (abs x) (abs y) , max (abs x) (abs y)
-      and c, d = min (abs x')(abs y'), max (abs x')(abs y') in
-      not (c < a && a < b && b < d) (* is nested ? *)
-      || lab < lab' |> fun x -> if x then true else failwith (Printf.sprintf "[nesting] (%i, %i) isn't under (%i, %i)" a b c d)
-    in
-    List.for_all (function ((lab, [x; y]), (lab', [x'; y'])) -> is_non_crossing (x, y) (x', y') && nested (lab, (x, y)) (lab', (x', y')) | _ -> failwith "couplage imparfait")
-      (Toolbox.carthesian_product d d) (* /!\ expensive *)
-    && List.for_all (fun cl -> label_condition cl && parity_condition cl) d
-
-
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -294,7 +274,7 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   let e i = generator_builder i (P.k-1) (function
       | j when j = i-1 -> [[j; j+1];[P.k+j; P.k+j+1]]
       | j when j = i -> []
-      | j -> [[j; P.k+j]]) |> (fun d -> assert (is_okada_diagram d); d)
+      | j -> [[j; P.k+j]]) |> (fun d -> assert (P.check d); d)
 
   let l i = generator_builder i (P.k-1) (function
       | j when j = i-1 -> [[j+P.k];[j+1];[j; P.k+j+1]]
@@ -309,4 +289,58 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   let (@) = concat (* assert (is_okada_diagram d && is_okada_diagram d'); concat d d' *)
 
   let (===) = (=) (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
+end
+
+(** More general that Okada since it allows all generators (but check will not returns true)*)
+module Okada (P : sig val k : int end) : PARAM = struct
+ type label = int
+ type node = int
+ type t = (label * node list) list
+  let k = P.k
+  (** [law labels] computes the resulted label obtained by applying a fixed law to [labels] 2by2. (labels are already in unconverted mode : in set [-k; k]\{0}) (but k>0)) *)
+  let law = List.fold_left (fun x y -> min (abs x) (abs y)) k
+  (* List.fold_left (fun x y -> Printf.printf "y=%i\n" y; if ((unconvert k x)|>abs) < ((unconvert k y)|>abs) then x else y) k (\* List.fold_left (fun x y -> if ((unconvert k x)|>abs) < ((unconvert k y)|>abs) then x else y) max_int *\) *)
+  (** [init_label nodes] is [law (map Toolbox.externalize nodes)]. Indeed, nodes aren't yet converted.*)
+  let init_label nodes = law (List.map (Toolbox.externalize k) nodes)
+
+  let check (d: ((int * int list) list)) = (* check if diagram d is an Okada diagram *)
+    let d = Utils.map (Toolbox.externalize P.k) d in (* mieux de convertir pour utiliser directement les propriétés telles que définies *)
+    let is_non_crossing (x, y) (x', y')=
+      let x , y  = min (abs x)  (abs y ), max (abs x ) (abs y)
+      and x', y' = min (abs x') (abs y'), max (abs x') (abs y') in
+      if x <= y && x' <= y' || x >= y && x' >= y' then true else failwith (Printf.sprintf "edges (%i, %i) and (%i, %i) are crossing" x y x' y')
+    and label_condition = function (lab, [x; y]) -> 1 <= lab && lab <= (min (abs x) (abs y)) | _ -> failwith "label_conditions: couplage imparfait"
+    and parity_condition = function (lab, [x; y]) -> lab mod 2 = (min (abs x) (abs y)) mod 2 | _ -> failwith "parity_conditions: couplage imparfait"
+    and nested (lab, (x, y)) (lab', (x', y')) =
+      let a, b = min (abs x) (abs y) , max (abs x) (abs y)
+      and c, d = min (abs x')(abs y'), max (abs x')(abs y') in
+      not (c < a && a < b && b < d) (* is nested ? *)
+      || lab < lab' |> fun x -> if x then true else failwith (Printf.sprintf "[nesting] (%i, %i) isn't under (%i, %i)" a b c d)
+    in
+    List.for_all (function ((lab, [x; y]), (lab', [x'; y'])) -> is_non_crossing (x, y) (x', y') && nested (lab, (x, y)) (lab', (x', y')) | _ -> failwith "couplage imparfait")
+      (Toolbox.carthesian_product d d) (* /!\ expensive *)
+    && List.for_all (fun cl -> label_condition cl && parity_condition cl) d
+
+  let generate concat
+      (generators_f: ((int -> t) * int) list) : int * int =
+    let generators = List.concat (List.map (fun (f, imax) -> Generate_semigroup.gg f imax) generators_f) in
+
+    let cache = Hashtbl.create (List.length generators) in
+    let rec loop (d: t) : unit =
+      if Hashtbl.mem cache d |> not then
+        begin
+          Hashtbl.add cache d ();
+          let nexts = List.map ((concat)d) generators in
+          (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
+          List.iter (fun concated -> loop concated) nexts
+        end
+    in
+    (match generators with
+     | [] -> ()
+     | h::_ -> loop h);
+    Hashtbl.length cache, List.length generators
+
+  let lab_to_int = Fun.id
+  let lab_to_string = string_of_int
+  let node_to_string = string_of_int
 end

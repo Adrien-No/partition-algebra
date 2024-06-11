@@ -1,4 +1,4 @@
-open Utils.Uf_persistant
+open Lib.Uf_persistant
 
 let _ =
  let uf = Uf.create 8 in

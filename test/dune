@@ -1,5 +1,5 @@
 (test
   (name test_uf_persistant)
-  (libraries utils)
+  (libraries lib)
   (modules test_uf_persistant)
 )

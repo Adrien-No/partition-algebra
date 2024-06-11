@@ -1,7 +1,7 @@
 Printexc.record_backtrace true
 
-open Utils.Toolbox
-open Utils.Unlabelled_diagram
+open Lib.Toolbox
+open Lib.Unlabelled_diagram
 
 let k = 3
 module Partition = Make (struct let k = k end : sig val k : int end)
