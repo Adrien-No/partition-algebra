@@ -23,7 +23,7 @@ let unlabelled (module Partition: Unlabelled_diagram.t with type t = int list li
   Hashtbl.length cache
 
 let labelled (module Partition: Labelled_diagram.t with type t = (int * int list) list)
-    (generators_f: ((int -> (int * int list) list) * int) list) : int =
+    (generators_f: ((int -> (int * int list) list) * int) list) : int * int =
   let generators = List.concat (List.map (fun (f, imax) -> gg f imax) generators_f) in
 
   let open Partition in
@@ -38,4 +38,4 @@ let labelled (module Partition: Labelled_diagram.t with type t = (int * int list
       end
   in
   loop id;
-  Hashtbl.length cache
+  Hashtbl.length cache, List.length generators

@@ -38,3 +38,9 @@ let ll_sort ll =
 let ll_print l =
   let l = List.map (fun l -> ("[" ^ (l |> List.map string_of_int |> String.concat "; ") ^ "]")) l in
   "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
+
+let rec carthesian_product acc l l' =
+  match l with
+  | [] -> acc
+  | x::q -> carthesian_product (List.fold_left (fun acc x' -> (x, x')::acc) acc l') q l'
+let carthesian_product l l' = carthesian_product [] l l'

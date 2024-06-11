@@ -1,9 +1,8 @@
-(test
- (name subalgebras)
+(tests
+ (names subalgebras okada_relations)
  (libraries utils)
- (modules subalgebras)
+ (modules subalgebras okada_relations)
 )
-
 
 ; (test
 ;  (name generators)

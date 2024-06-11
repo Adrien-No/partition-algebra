@@ -1,7 +1,7 @@
 open Utils
 
 let _ =
-  for i = 1 to 4 do
+  for i = 1 to 8 do
     let module P:Labelled_diagram.PARAM with type label = int and type node = int = struct
       type label = int
       type node = int
@@ -18,7 +18,8 @@ let _ =
     end in
 
     let module D = Labelled_diagram.Make(P) in
-    let card = Generate_semigroup.labelled (module D) [(D.l, P.k-1); (D.r, P.k-1); (* (D.r, P.k-1) *)] in
+    (* let card = Generate_semigroup.labelled (module D) [(D.l, P.k-1); (D.r, P.k-1); (\* (D.r, P.k-1) *\)] in *)
+    let card, ngen = Generate_semigroup.labelled (module D) [(D.e, P.k-1)(* (D.s, P.k-1); (D.p, P.k-1); (D.b, P.k-1) *)] in
     D.print_empty();
-    Printf.printf "%i\n" card
-  done;
+    Printf.printf "cardinal : %i. nb generateurs : %i.\n" card ngen
+  done

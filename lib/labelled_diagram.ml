@@ -61,6 +61,7 @@ module type t = sig
   val (===) : t -> t -> bool
   val (@) : t -> t -> t
 
+  val is_okada_diagram : t -> bool
 end
 
 module type PARAM = sig
@@ -107,6 +108,26 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
       Printf.printf "[ERROR] invariants not maintained\n";
       Utils.print P.lab_to_string P.node_to_string d;
       failwith "[error]" end
+
+  let is_okada_diagram (d: t) =
+    let d = Utils.map (Toolbox.externalize P.k) d in (* mieux de convertir pour utiliser directement les propriétés telles que définies *)
+    let is_non_crossing (x, y) (x', y')=
+        let x , y  = min (abs x)  (abs y ), max (abs x ) (abs y)
+        and x', y' = min (abs x') (abs y'), max (abs x') (abs y') in
+        if x <= y && x' <= y' || x >= y && x' >= y' then true else failwith (Printf.sprintf "edges (%i, %i) and (%i, %i) are crossing" x y x' y')
+    and label_condition = function (lab, [x; y]) -> 1 <= lab && lab <= (min (abs x) (abs y)) | _ -> failwith "label_conditions: couplage imparfait"
+    and parity_condition = function (lab, [x; y]) -> lab mod 2 = (min (abs x) (abs y)) mod 2 | _ -> failwith "parity_conditions: couplage imparfait"
+    and nested (lab, (x, y)) (lab', (x', y')) =
+      let a, b = min (abs x) (abs y) , max (abs x) (abs y)
+      and c, d = min (abs x')(abs y'), max (abs x')(abs y') in
+      not (c < a && a < b && b < d) (* is nested ? *)
+      || lab < lab' |> fun x -> if x then true else failwith (Printf.sprintf "[nesting] (%i, %i) isn't under (%i, %i)" a b c d)
+    in
+    List.for_all (function ((lab, [x; y]), (lab', [x'; y'])) -> is_non_crossing (x, y) (x', y') && nested (lab, (x, y)) (lab', (x', y')) | _ -> failwith "couplage imparfait")
+      (Toolbox.carthesian_product d d) (* /!\ expensive *)
+    && List.for_all (fun cl -> label_condition cl && parity_condition cl) d
+
+
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -273,7 +294,7 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
   let e i = generator_builder i (P.k-1) (function
       | j when j = i-1 -> [[j; j+1];[P.k+j; P.k+j+1]]
       | j when j = i -> []
-      | j -> [[j; P.k+j]])
+      | j -> [[j; P.k+j]]) |> (fun d -> assert (is_okada_diagram d); d)
 
   let l i = generator_builder i (P.k-1) (function
       | j when j = i-1 -> [[j+P.k];[j+1];[j; P.k+j+1]]
@@ -285,7 +306,7 @@ module Make (P: PARAM with type label = int ) : t with type t = (P.label * P.nod
       | j when j = i -> []
       | j -> [[j; P.k+j]])
 
-  let (@) = concat
+  let (@) = concat (* assert (is_okada_diagram d && is_okada_diagram d'); concat d d' *)
 
   let (===) = (=) (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
 end
