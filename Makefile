@@ -23,3 +23,7 @@ show:
 clear:
 	rm -f img/diagram*.png
 	rm -f img/*.dot
+
+send:
+	echo "Sending email ..."
+	mailx -s "research" "sequences@oeis.org" < request-oeis.txt

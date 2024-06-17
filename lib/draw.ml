@@ -1,3 +1,5 @@
+(* Creates .dot file to draw graphs (wich can be obtained with a conversion from a diagram) *)
+
 (* from https://stackoverflow.com/questions/8999557/how-to-visualize-draw-automata-in-ocaml *)
 
 let w_vertex, h_vertex = 1, 1

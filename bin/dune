@@ -2,5 +2,4 @@
  (public_name partition_algebra)
  (name main)
  (libraries
-  unionFind ocamlgraph utils
-  ))
+  unionFind ocamlgraph lib))

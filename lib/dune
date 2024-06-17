@@ -1,4 +1,12 @@
+; (library
+;   (name Local_tools)
+;   (modules Diagram)
+;   (libraries ocamlgraph unionFind str)
+; )
+
 (library
  (name lib)
- (libraries ocamlgraph unionFind str)
+ ; (modules Labelled_diagram Unlabelled_diagram)
+ (libraries ocamlgraph unionFind str unix ; Local_tools
+ )
 )

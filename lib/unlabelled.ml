@@ -6,55 +6,61 @@
    - les générateurs ne contiennent pas tous exactement tous les sommets
    - la concat prend-elle en compte les sommets isolés ? (sont-ils ajoutés au résultat ?)
 *)
-module type t = sig
-  type t
 
-  val of_ill : int list list -> t
+(* ================ basic functions for 'a list list ================ *)
+module Utils = struct
+let iter f =
+  List.iter (List.iter f)
 
-  val id : t
+let map f =
+  List.map (List.map f)
 
-  val s : int -> t
-  val p : int -> t
-  val b : int -> t
-  val e : int -> t
-  val l : int -> t
-  val r : int -> t
+let fold f init =
+  List.fold_left (List.fold_left f) init
 
-  val concat : t -> t -> t
-  val (@) : t -> t -> t
-  val (===) : t -> t -> bool
-  val print : t -> unit
+let filter f ll =
+  List.map (List.filter f) ll |> List.filter ((<>)[])
 
-  val print_empty : unit -> unit
+let filter_map f ll = (* un peu coûteux en accès mémoire ? => TODO faire avec des Seq*)
+  map f ll
+  |> filter ((<>)None)
+  |> map Option.get
+
+let sort ll =
+  List.map (List.fast_sort compare) ll |> List.fast_sort compare
+
+let print l =
+  let l = List.map (fun l -> ("[" ^ (l |> List.map string_of_int |> String.concat "; ") ^ "]")) l in
+  "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
 end
 
-module Make (P: sig val k : int end) : t with type t = int list list = struct (* we could remove the type t restriction but useful to make tests easier *)
+module Make (P: sig val k : int end) : Diagram.t (* with type t = int list list *) = struct (* we could remove the type t restriction but useful to make tests easier *)
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
 
   (* Les générateurs sont numérotés en externe de 1 à k *)
   type t = int list list
-
+  type label = int
   (** unsafe creation from \[-k;k\]\{0} to \[0; 2*k-1\]*)
-  let of_ill ll = Toolbox.ll_map (Toolbox.convert P.k) ll |> Toolbox.ll_sort
-
-  let id = List.init P.k (fun i -> [i; P.k+i]) |> Toolbox.ll_sort(* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
+  let of_ill ll = Utils.map (Toolbox.convert P.k) ll |> Utils.sort
+  let print_as_string = Utils.print
+  let id = List.init P.k (fun i -> [i; P.k+i]) |> Utils.sort(* index goes from 0 to P.k-1 and P.k*2-1 to P.k *)
 
   let range_test (i: int) (i_min: int) (i_max: int) : unit =
     if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
 
-  let check_diagram (d: t) : unit =
-    let h = Hashtbl.create (P.k*2) in
-    let range_test i = range_test i 0 (P.k*2-1) in
-    Toolbox.ll_iter (fun i -> range_test i; Hashtbl.add h i ()) d;
-    if List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h))
-      && d = Toolbox.ll_sort d
-    then ()
-    else begin
-        Printf.printf "[ERROR] invariants not maintained\n";
-        Toolbox.ll_print d;
-        failwith "[error]" end
+  (* let check_diagram (d: t) : unit = *)
+  (*   let h = Hashtbl.create (P.k*2) in *)
+  (*   let range_test i = range_test i 0 (P.k*2-1) in *)
+  (*   Utils.iter (fun i -> range_test i; Hashtbl.add h i ()) d; *)
+  (*   if List.for_all Fun.id (List.init (P.k*2) (Hashtbl.mem h)) *)
+  (*     && d = Utils.sort d *)
+  (*   then () *)
+  (*   else begin *)
+  (*       Printf.printf "[ERROR] invariants not maintained\n"; *)
+  (*       Utils.print d; *)
+  (*       failwith "[error]" end *)
 
   let s i = (* NOTE opti : faire des générateurs pour i dans la range test, puis les appeler sans les reconstruire *)
     range_test i 1 (P.k-1);
@@ -63,7 +69,7 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
       function
       | j when j = i   -> [j  ; P.k+j+1]
       | j when j = i+1 -> [j; P.k+j-1]
-      | j ->              [j; P.k+j]) |> Toolbox.ll_sort
+      | j ->              [j; P.k+j]) |> Utils.sort
 
   let p i =
     range_test i 1 P.k;
@@ -75,7 +81,7 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
       | j -> loop ([j; P.k+j]::acc) (j+1)
     in
     loop [] 0
-    |> Toolbox.ll_sort
+    |> Utils.sort
 
   let b i =
     range_test i 1 (P.k-1);
@@ -88,7 +94,7 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
       | i -> loop ([i; P.k+i]::acc) (i+1)
     in
     loop [] 0
-    |> Toolbox.ll_sort
+    |> Utils.sort
 
   let to_graph (diagram: t) =
     let open Draw in
@@ -185,8 +191,8 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
   let concat (a: t) (b: t) : t =
     (* check_diagram a; *)
     (* check_diagram b; *)
-    (* Printf.printf "\na="; Toolbox.ll_print a; *)
-    (* Printf.printf "\nb=";Toolbox.ll_print b; *)
+    (* Printf.printf "\na="; Utils.print a; *)
+    (* Printf.printf "\nb=";Utils.print b; *)
     (* [0] initialize uf structure *)
     let uf = Uf.create (3*P.k) in
 
@@ -194,7 +200,7 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
     let uf = add_diagram_to_uf uf a in
 
     (* [2] unify depending on b *)
-    let uf = add_diagram_to_uf uf (Toolbox.ll_map ((+)P.k) b) in
+    let uf = add_diagram_to_uf uf (Utils.map ((+)P.k) b) in
 
     (* [3] extract C from uf *)
     let c = ill_of_uf uf (3*P.k) in
@@ -204,14 +210,14 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
       | n when n < 2*P.k -> None
       | n    (*n < 3*P.k*) -> Some (n-P.k)
     in
-    let res = Toolbox.ll_filter_map f c |> Toolbox.ll_sort in
+    let res = Utils.filter_map f c |> Utils.sort in
     (* check_diagram res; *)
     res
 
   let (@) = concat
 
   let (===) d d' = (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
-    (* Toolbox.ll_print d; Toolbox.ll_print d'; *)
+    (* Utils.print d; Utils.print d'; *)
      d = d'
 
   let e i = b i @ p i @ p (i+1) @ b i (* déjà triés car les concat et autres gen sont triées *)
@@ -219,4 +225,17 @@ module Make (P: sig val k : int end) : t with type t = int list list = struct (*
   let l i = s i @ p i
 
   let r i = p i @ s i
+
+  let get_generator =
+    let open Diagram in
+    function
+      | S -> s, P.k-1
+      | P -> p, P.k
+      | B -> b, P.k-1
+      | E -> e, P.k-1
+      | L -> l, P.k-1
+      | R -> r, P.k-1
+      | Id -> (fun _ -> id), 1
+
+  let generate = failwith "todo"
 end

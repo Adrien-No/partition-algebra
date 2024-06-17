@@ -1,4 +1,4 @@
-open Lib
+(* open Lib *)
 
 (* module P:Labelled_diagram.PARAM with type label = int and type node = int = struct *)
 (*   type label = int *)
@@ -21,3 +21,35 @@ open Lib
 (*   print (e 1 @ e 2); *)
 (*   assert (D.is_okada_diagram (e 1 @ e 2)) *)
 (*   (\* List.fold_left (fun d d' -> print d'; d@d') id [e 1; e 2; e 3] |> (fun d -> print_empty(); print d) *\) *)
+
+(* open Lib *)
+(* module Okada = Labelled_diagram.Okada(struct let k = 3 end) *)
+(* module D = Labelled_diagram.Make(Okada) *)
+
+(* let _ = *)
+(*   let open D in *)
+(*   print_empty() *)
+
+(* module Okada2 = Lib.Labelled.Okada(struct let k = 2 end) *)
+(* module D2 = Lib.Labelled.Make(Okada2) *)
+
+(* let _ = *)
+(*   (\* let elt1 = D2.of_ill [[1; -1]; [2; -2]] *\) *)
+(*   (\* and elt2 = D2.of_ill [[2; -2]; [1; -1]] in *\) *)
+(*   (\* D2.print_as_string elt1; *\) *)
+(*   (\* D2.print_as_string elt2; *\) *)
+(*   (\* assert (elt1 = elt2) *\) *)
+
+(* let sg = D2.generate [B; P] in *)
+(* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
+(* Printf.printf "size= %i\n" (List.length sg); *)
+(* List.iter D2.print sg *)
+
+module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
+module D2 = Lib.Labelled.Make(Okada2)
+
+let _ =
+  let sg = D2.generate [B; P] in
+  (* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
+  Printf.printf "size= %i\n" (List.length sg);
+  List.iter D2.print sg

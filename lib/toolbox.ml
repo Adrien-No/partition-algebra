@@ -13,34 +13,12 @@ let externalize k i =
 (* aliases *)
 let convert = internalize
 let unconvert = externalize
-(* ================ basic functions for 'a list list ================ *)
-let ll_iter f =
-  List.iter (List.iter f)
-
-let ll_map f =
-  List.map (List.map f)
-
-let ll_fold f init =
-  List.fold_left (List.fold_left f) init
-
-let ll_filter f ll =
-  List.map (List.filter f) ll |> List.filter ((<>)[])
-
-let ll_filter_map f ll =
-  (* un peu coûteux en accès mémoire ? => TODO faire avec des Seq*)
-  ll_map f ll
-  |> ll_filter ((<>)None)
-  |> ll_map Option.get
-
-let ll_sort ll =
-  List.map (List.fast_sort compare) ll |> List.fast_sort compare
-
-let ll_print l =
-  let l = List.map (fun l -> ("[" ^ (l |> List.map string_of_int |> String.concat "; ") ^ "]")) l in
-  "[" ^ (String.concat ";\n" l) ^ "]\n" |> Printf.printf "%s"
 
 let rec carthesian_product acc l l' =
   match l with
   | [] -> acc
   | x::q -> carthesian_product (List.fold_left (fun acc x' -> (x, x')::acc) acc l') q l'
 let carthesian_product l l' = carthesian_product [] l l'
+
+let string_of_int_list l =
+  List.map string_of_int l |> String.concat " "
