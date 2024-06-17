@@ -1,73 +1,64 @@
-(* Printexc.record_backtrace true *)
+Printexc.record_backtrace true
 
-(* open Utils.Labelled_diagram *)
+let k = 3
+module D = Lib.Labelled.Make(struct let k = k end)
+open D
+open Lib.Labelled
 
-(* (\** [internalize k i] converts i in a diagram of size 2k from set [-k; k]\{0} to set [0; 2k-1]. *)
-(*     It correspond to the external (resp internal) numerotation of diagram vertices. *\) *)
-(* let internalize k x = *)
-(*   if x > 0 then x - 1 *)
-(*   else k - x - 1 *)
+let external_lab_create l =
+  List.map (function
+      | label, [] -> failwith "wrongly created"
+      | _label, [node] -> Unique (Lib.Toolbox.internalize k node)
+      | label, nodes -> Few(label, List.map (Lib.Toolbox.internalize k) nodes)
+  ) l |> Utils.sort
 
-(* (\** [externalize k i] converts i in a diagram of size 2k from set [0; 2k-1] to set [-k; k]\{0}. *)
-(*     It correspond to the internal (resp external) numerotation of diagram vertices. *\) *)
-(* let externalize k i = *)
-(*   if i < k then (i+1) *)
-(*   else -(i-k+1) *)
+let external_unlab_create l =
+  List.map (function
+    | [] -> failwith "wrongly created"
+    | [node] -> Unique (Lib.Toolbox.internalize k node)
+    | nodes ->
+      Few(List.fold_left min k (List.map abs nodes), List.map (Lib.Toolbox.internalize k) nodes)) l
+  |> Utils.sort
 
-(* module P:PARAM with type label = int and type node = int = struct *)
-(*   type label = int *)
-(*   type node = int *)
-(*   let k = 3 *)
-(*   (\* List.fold_left min max_int n'est pas bon car ne tiens pas compte de la "valeur absolue sur les noeuds"*\) *)
-(*   (\** [law labels] computes the resulted label optained by applying a fixed law to [labels] 2by2. (labels are already in unconverted mode : in set [-k; k]\{0}) (but k>0)) *\) *)
-(*   let law = List.fold_left (fun x y -> min (abs x) (abs y)) k *)
-(*     (\* List.fold_left (fun x y -> Printf.printf "y=%i\n" y; if ((unconvert k x)|>abs) < ((unconvert k y)|>abs) then x else y) k (\\* List.fold_left (fun x y -> if ((unconvert k x)|>abs) < ((unconvert k y)|>abs) then x else y) max_int *\\) *\) *)
-(*   (\** [init_label nodes] is [law (map externalize nodes)]. Indeed, nodes aren't yet converted.*\) *)
-(*   let init_label nodes = law (List.map (externalize k) nodes) *)
+exception Error of int * D.t * D.t
+let errorer ntest x y =
+  if x === y then () (* l'égalité correspond à celle dans la partition *)
+  else raise (Error (ntest+38, x, y))
 
-(*   let lab_to_string = string_of_int *)
-(*   let node_to_string = string_of_int *)
-(* end *)
+let test_adder () =
+  let a = e 1 in
+  let b = e 2 in
+  let c' = external_lab_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])] in
+  print a;
+  print b;
+  print (a @ b);
+  print c'
 
-(* module Partition = Make (P:PARAM with type label = int) *)
-(* open Partition *)
+let generators_extended() =
+  try
+    (* #### début de l'écriture des tests #### *)
+    errorer 1 (s 1) (external_lab_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
+    errorer 2 (s 1 @ s 1) (external_lab_create [(1, [1; -1]); (1, [2; -2]); (3, [3; -3])]); (* a case where a label is reduced *)
+    errorer 3 (p 1) (external_unlab_create [[1]; [-1]; [2; -2]; [3; -3]]);
+    errorer 4 (s 1 @ id) (external_lab_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]);
+    errorer 5 (id @ s 1) (external_unlab_create [[1; -2]; [2; -1]; [3; -3]]);
+    errorer 6 (l 1) (external_unlab_create [[1; -2]; [3; -3]; [2]; [-1]]);
+    errorer 7 (l 2) (external_unlab_create [[1; -1]; [2; -3]; [-2]; [3]]);
+    errorer 8 (e 1) (external_unlab_create [[1; 2]; [-1; -2]; [3; -3]]);
+    errorer 9 (e 2) (external_unlab_create [[1; -1]; [2; 3]; [-2; -3]]);
+    errorer 10(r 1) (external_unlab_create [[-1; 2]; [3; -3]; [1]; [-2]]);
+    errorer 11(r 2) (external_unlab_create [[1; -1]; [-2; 3]; [2]; [-3]]);
+    errorer 12(l 1 @ r 1) (p 2);
+    errorer 13(r 1 @ l 1) (external_lab_create [(1, [1]); (1, [-1]); (1, [2; -2]); (3, [3; -3])]);
+    errorer 14(e 1 @ e 2) (external_lab_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])])
+    (* #### fin de l'écriture des tests #### *)
+  with Error (line, d, d') ->
+    Printf.printf "%s\n" (to_string d);
+    Printf.printf "%s\n" (to_string d');
+    print d; print d';
+    Printf.printf "[ERROR LINE %i] generator_tests: not equal" line (* we don't really raise so diagrams can be printed *)
 
-(* exception Error of Partition.t * Partition.t *)
-(* let errorer x y = *)
-(*   if x === y then () (\* l'égalité correspond à celle dans la partition *\) *)
-(*   else raise (Error (x, y)) *)
-
-(* let test_adder () = *)
-(*   let a = e 1 in *)
-(*   let b = e 2 in *)
-(*   let c' = unsafe_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])] in *)
-(*   print a; *)
-(*   print b; *)
-(*   print (a @ b); *)
-(*   print c' *)
-
-(* let generators_extended() = *)
-(*   try *)
-(*     (\* #### début de l'écriture des tests #### *\) *)
-(*     errorer (s 1) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]); *)
-(*     errorer (s 1 @ s 1) (unsafe_create [(1, [1; -1]); (1, [2; -2]); (3, [3; -3])]); (\* a case where a label is reduced *\) *)
-(*     errorer (p 1) (of_ill [[1]; [-1]; [2; -2]; [3; -3]]); *)
-(*     errorer (s 1 @ id) (unsafe_create [(1, [1; -2]); (1, [2; -1]); (3, [3; -3])]); *)
-(*     errorer (id @ s 1) (of_ill [[1; -2]; [2; -1]; [3; -3]]); *)
-(*     errorer (l 1) (of_ill [[1; -2]; [3; -3]; [2]; [-1]]); *)
-(*     errorer (l 2) (of_ill [[1; -1]; [2; -3]; [-2]; [3]]); *)
-(*     errorer (e 1) (of_ill [[1; 2]; [-1; -2]; [3; -3]]); *)
-(*     errorer (e 2) (of_ill [[1; -1]; [2; 3]; [-2; -3]]); *)
-(*     errorer (r 1) (of_ill [[-1; 2]; [3; -3]; [1]; [-2]]); *)
-(*     errorer (r 2) (of_ill [[1; -1]; [-2; 3]; [2]; [-3]]); *)
-(*     errorer (l 1 @ r 1) (p 2); *)
-(*     errorer (r 1 @ l 1) (unsafe_create [(1, [1]); (1, [-1]); (1, [2; -2]); (3, [3; -3])]); *)
-(*     errorer (e 1 @ e 2) (unsafe_create [(1, [-1; 3]); (1, [1; 2]); (2, [-2; -3])]) *)
-(*     (\* #### fin de l'écriture des tests #### *\) *)
-(*   with Error (d, d') -> print_as_string d; print_as_string d'; print d; print d'; Printf.printf "[ERROR] generator_tests: not equal" (\* we don't really raise so diagrams can be printed *\) *)
-
-(* let _ = *)
-(*   (\* test_adder(); *\) *)
-(*   generators_extended(); *)
-(*   print_empty() *)
-(*   (\* p 1 @ p 2 |> print *\) *)
+let _ =
+  (* test_adder(); *)
+  generators_extended()
+  (* p 1 @ p 2 |> print *)

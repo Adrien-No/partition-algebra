@@ -1,4 +1,4 @@
-(* Modifie les fichiers .dot représentant les diagrammes à afficher de telle sorte à corriger les erreurs typographiques de la bibliothèque ocamlgraph.graphviz provoquant des bugs (mauvaise génération des fichiers .dot) *)
+(* (\* Modifie les fichiers .dot représentant les diagrammes à afficher de telle sorte à corriger les erreurs typographiques de la bibliothèque ocamlgraph.graphviz provoquant des bugs (mauvaise génération des fichiers .dot) *\) *)
 
 let draw_diagram () =
   (* draw diagrams *)
@@ -12,37 +12,6 @@ let draw_diagram () =
         continue := false
   done
 
-let send_to_oeis file s =
-  Printf.fprintf file "lookup %s\n" s
-
-let sol = Lib.Toolbox.string_of_int_list
-
-(* let cardinal_of_semigroup (module D: Lib.Diagram.t) (gens: Lib.Diagram.generators list) = *)
-(*   fst (Lib.Generate_semigroup.make D.concat (List.map D.get_generator gens) D.sort) *)
-
-let k_okada k =
-  let module Okada = Lib.Labelled.Okada (struct let k = k end) in
-  let module D = Lib.Labelled.Make(Okada) in
-  (module D : Lib.Diagram.t)
-
-let k_partition k =
-  let module D = Lib.Unlabelled.Make(struct let k = k end) in
-  (module D : Lib.Diagram.t)
-
-type algebra = Okada | Partition
-let get_algebra = function
-    Okada -> k_okada
-  | Partition -> k_partition
-
-  (* let elt1 = D2.of_ill [[1; -1]; [2; -2]] *)
-  (* and elt2 = D2.of_ill [[2; -2]; [1; -1]] in *)
-  (* D2.print_as_string elt1; *)
-  (* D2.print_as_string elt2; *)
-  (* assert (elt1 = elt2) *)
-(* let generate choice generators len = *)
-(*   List.init len Int.succ *)
-(*   |> List.map (fun k -> cardinal_of_semigroup (get_algebra choice k) generators) *)
-
 (* let _ = *)
 (*   let planar = generate Okada [B; P; Id] 4 in *)
 (*   Printf.printf "planar labelled : %s\n" (sol planar); List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n"; *)
@@ -51,4 +20,19 @@ let get_algebra = function
 (*   (\* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *\) *)
 (*   List.iter Okada2.print elts; *)
 
-let _ = draw_diagram()
+let okada2() =
+  let module Okada = Lib.Labelled.Make(struct let k = 2 end) in
+  let planar = Okada.generate [B; P; Id] in
+  List.iter Okada.print planar
+
+let _ =
+  let planar =
+  List.init 6 (fun k ->
+    let module Okada = Lib.Labelled.Make(struct let k = k end) in
+    let planar = Okada.generate [B; P; Id] in
+    planar) in
+  let planar_len = List.map List.length planar in
+  Lib.Toolbox.string_of_int_list planar_len |> Printf.printf "planar Okada: %s\n";
+  Lib.Toolbox.string_of_int_list (List.map (fun x -> Lib.Maths.prime_decomp x |> List.length ) planar_len) |> Printf.printf "nb_decomp: %s\n";
+  okada2();
+  draw_diagram()

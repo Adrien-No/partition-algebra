@@ -21,7 +21,7 @@ let make (elts : 'a list) (concat : 'a -> 'a -> 'a) (sort : 'a -> 'a) f : 'a lis
       end
   in
   loop None;
-  Printf.printf "contenu de la table de hachage:\n";
-  Hashtbl.iter (fun x y -> f x; print_newline()) cache;
+  (* Printf.printf "contenu de la table de hachage:\n"; *)
+  (* Hashtbl.iter (fun x y -> f x; print_newline()) cache; *)
   let l = Hashtbl.to_seq cache |> List.of_seq |> List.map fst |> List.sort_uniq compare in
   l

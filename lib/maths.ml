@@ -104,4 +104,4 @@ let prime_decomp n = (* TODO idee opti : test de primalité sur n puis eratosten
         else
           acc
     in
-    decomp primes n [] |> List.rev |> List.sort_uniq compare
+    decomp primes n [] |> List.rev
