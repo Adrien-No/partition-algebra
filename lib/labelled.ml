@@ -262,14 +262,14 @@ module Make (P: PARAM) : (Diagram.t with type t = P.t) = struct
 
   let (===) = (=) (* chaque concat est triée avant d'être renvoyée et les generateurs sont triées, donc on suppose que les arguments sont triés *)
 
-  let generate (gens: Diagram.generators list) =
+  let generate (gens: Diagram.generators list) : t list =
     let open Diagram in
     let gens =
       let generate_generators f imax = List.init imax Int.succ |> List.map f in
       List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens))
       |> List.map Utils.sort
     in
-    Generate_semigroup.make gens concat Utils.sort print_as_string
+    Generate_semigroup.make gens concat Utils.sort
 end
 
 (** More general than Okada since it allows all generators (but check will not returns true)*)
