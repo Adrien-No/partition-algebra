@@ -47,27 +47,27 @@ module Make (P: sig val k : int end) = struct
         [] -> g
       | Unique _node::cls -> loop_diagram cls g (* _node has already been added *)
       | Few (label, cl)::cls ->
-          let rec loop_cl prev_elem (cl : int list) g =
-            match prev_elem with
-            | None ->
-              begin
-                match cl with
-                | [] -> g
-                | elem::cl -> loop_cl (Some elem) cl g
-              end
-            | Some prev_elem ->
+        let rec loop_cl prev_elem (cl : int list) g =
+          match prev_elem with
+          | None ->
+            begin
               match cl with
               | [] -> g
-              | [elem] ->
-                G.add_edge_e g (G.E.create prev_elem (string_of_int label) elem) (* pas d'appel récursif car on a fini la liste *)
-              | elem::elems ->
-                let new_g = G.add_edge g prev_elem elem in (* d'après le match-case précédent, il y a encore au moins un élement dans elems *)
-                loop_cl (Some elem) elems new_g
-          in
-          let new_g = loop_cl None cl g in
-          loop_diagram cls new_g
-      in
-      loop_diagram diagram g
+              | elem::cl -> loop_cl (Some elem) cl g
+            end
+          | Some prev_elem ->
+            match cl with
+            | [] -> g
+            | [elem] ->
+              G.add_edge_e g (G.E.create prev_elem (string_of_int label) elem) (* pas d'appel récursif car on a fini la liste *)
+            | elem::elems ->
+              let new_g = G.add_edge g prev_elem elem in (* d'après le match-case précédent, il y a encore au moins un élement dans elems *)
+              loop_cl (Some elem) elems new_g
+        in
+        let new_g = loop_cl None cl g in
+        loop_diagram cls new_g
+    in
+    loop_diagram diagram g
 
   let diagram_counter = ref 0
   let print (diagram: t) =
@@ -177,7 +177,10 @@ module Make (P: sig val k : int end) = struct
     in Utils.sort c
 
   let generator_builder i imax (f: int -> int list list) =
-    (* range_test i 1 imax; *)
+    let range_test (i: int) (i_min: int) (i_max: int) : unit =
+      if i < i_min || i > i_max then failwith (Printf.sprintf "[range_test_error] %i not in [%i..%i]" i i_min i_max)
+    in
+    range_test i 1 imax;
     let unlabelled =
       let rec loop (acc: int list list) j =
         if j = P.k then acc
@@ -185,7 +188,7 @@ module Make (P: sig val k : int end) = struct
       in loop [] 0
     in unlabelled |> of_unlabelled law_mult |> Utils.sort
 
-  let id = generator_builder P.k P.k (fun i -> [[i; P.k+i]])
+  let id = generator_builder (P.k+1) (P.k+1) (fun i -> [[i; P.k+i]])
 
   let s i = generator_builder i (P.k-1) (function
       | j when j = i-1   -> [[j  ; P.k+j+1]]

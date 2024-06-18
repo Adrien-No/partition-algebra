@@ -35,20 +35,25 @@ let _ =
   (* Lib.Toolbox.string_of_int_list planar_seq |> Printf.printf "planar Okada: %s\n"; *)
   (* Lib.Toolbox.string_of_int_list (List.map (fun x -> Lib.Maths.prime_decomp x |> List.length ) planar_seq) |> Printf.printf "nb_decomp: %s\n"; *)
   (* okada2(); *)
+
+  let module Okada = Lib.Labelled.Make(struct let k = 4 end) in
+  (* Okada.print (Okada.b 2); *)
+  (* Okada.print (Okada.b 3); *)
+  (* Okada.print (Okada.concat (Okada.b 2)  (Okada.b 3)); *)
   draw_diagram()
 
 (* stabilisateurs *)
-let _ =
-  for k = 1 to 2 do
-    let module Okada = Lib.Labelled.Make(struct let k = k end) in
-    let planar = Okada.generate [B; P; Id] in
-    List.map (fun d ->
-        let rec stabilize d' acc =
-          let new_d = d @ d' in
-          if new_d = d' then (acc+1)
-          else stabilize new_d (acc+1)
-        in
-        stabilize d 0
-      ) planar
-    |> Lib.Toolbox.string_of_int_list |> Printf.printf "k = %i stabilisateurs : %s" k
-  done
+(* let _ = *)
+(*   for k = 1 to 2 do *)
+(*     let module Okada = Lib.Labelled.Make(struct let k = k end) in *)
+(*     let planar = Okada.generate [B; P; Id] in *)
+(*     List.map (fun d -> *)
+(*         let rec stabilize d' acc = *)
+(*           let new_d = d @ d' in *)
+(*           if new_d = d' then (acc+1) *)
+(*           else stabilize new_d (acc+1) *)
+(*         in *)
+(*         stabilize d 0 *)
+(*       ) planar *)
+(*     |> Lib.Toolbox.string_of_int_list |> Printf.printf "k = %i stabilisateurs : %s" k *)
+(*   done *)
