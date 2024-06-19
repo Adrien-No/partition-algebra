@@ -20,19 +20,23 @@ let draw_diagram () =
 (*   (\* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *\) *)
 (*   List.iter Okada2.print elts; *)
 
+let nb_composante d =
+  let open Lib.Labelled in
+  List.fold_left (fun init -> function Unique _ -> init+1 | Few _ -> init+1 ) 0 d
+
 let okada2() =
   let module Okada = Lib.Labelled.Make(struct let k = 2 end) in
-  let planar = Okada.generate [B; P; Id] in
+  let planar = Okada.generate [B; P; Id] |> List.sort (fun x y -> compare (nb_composante y) (nb_composante x)) in
   List.iter Okada.print planar
 
 let _ =
   let planar =
     List.init 6 (fun k ->
         let module Okada = Lib.Labelled.Make(struct let k = k end) in
-        let planar = Okada.generate [B; P; Id] in
+        let planar = Okada.generate [B; P] in
         planar) in
   let planar_seq = List.map List.length planar in
-  String.concat " "(planar_seq |> List.map string_of_int |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "planar Okada:";
+  String.concat " "(planar_seq |> List.map string_of_int |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "planar Okada :";
   String.concat " " (List.map (fun x -> Lib.Maths.prime_decomp x |> List.map string_of_int |> String.concat "x") planar_seq |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "decomposition :";
   okada2();
 
