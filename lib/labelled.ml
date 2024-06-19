@@ -85,6 +85,7 @@ module Make (P: PARAM) : (Diagram.t with type t = P.t) = struct
               begin
                 match cl with
                 | [] -> g
+                | [node] -> G.add_edge_e g (G.E.create node (P.lab_to_string label) node) (* on labelise aussi noeuds seuls *)
                 | elem::cl -> loop_cl (Some elem) cl g
               end
             | Some prev_elem ->
@@ -107,7 +108,7 @@ module Make (P: PARAM) : (Diagram.t with type t = P.t) = struct
     let file = (* print_string (Sys.getcwd()); *)
       (* open_out (Sys.getcwd() ^ "/../../../../img/diagram"^string_of_int !diagram_counter ^".dot") in *)
       try
-        open_out (Sys.getcwd() ^ "/../../../../img/diagram"^string_of_int !diagram_counter ^".dot")
+        open_out (Sys.getcwd() ^ (Printf.sprintf "/../../../../img/diagram%i.dot" !diagram_counter))
       with Sys_error _ ->
         open_out (Sys.getcwd() ^ "/img/diagram"^string_of_int !diagram_counter ^".dot")
     in

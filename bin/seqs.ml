@@ -21,3 +21,6 @@ let generate choice generators len =
   List.init len Int.succ
   |> List.map (fun k -> cardinal_of_semigroup (get_algebra choice k) generators)
   (* |> Lib.Toolbox.string_of_int_list *)
+
+let _ =
+  Printf.printf "salut\n"

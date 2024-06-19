@@ -44,12 +44,3 @@
 (* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
 (* Printf.printf "size= %i\n" (List.length sg); *)
 (* List.iter D2.print sg *)
-
-module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
-module D2 = Lib.Labelled.Make(Okada2)
-
-let _ =
-  let sg = D2.generate [B; P] in
-  (* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
-  (* Printf.printf "size= %i\n" (List.length sg); *)
-  List.iter D2.print sg

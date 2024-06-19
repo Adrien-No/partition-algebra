@@ -1,17 +1,5 @@
 (* Modifie les fichiers .dot représentant les diagrammes à afficher de telle sorte à corriger les erreurs typographiques de la bibliothèque ocamlgraph.graphviz provoquant des bugs (mauvaise génération des fichiers .dot) *)
 
-let draw_diagram () =
-  (* draw diagrams *)
-  let c = ref 0 in
-  let continue = ref true in
-  while !continue do
-      try
-        Lib.Draw.pin_dot_and_typo (Sys.getcwd() ^ Printf.sprintf "/img/diagram%i.dot" !c);
-        incr c
-      with Sys_error _s -> (* Printf.printf "dernier fichier+1: %s\n" _s; *)
-        continue := false
-  done
-
 let send_to_oeis file s =
   Printf.fprintf file "lookup %s\n" s
 
@@ -37,8 +25,23 @@ let seq algebra k_max gens =
     D.generate gens |> List.length
     )
 
+module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
+module D2 = Lib.Labelled.Make(Okada2)
+
+(* on défini le nombre de composante comme le nb de sous-ensemble de taile > 1 *)
+let nb_comp =
+  List.fold_left (fun init -> function _, [] -> init | _ -> init+1 ) 0
+
 let _ =
-  let planar = seq Okada 4 [B; P; Id] in
+  (* D2.print_empty() *)
+  let sg = D2.generate [B; P] |> List.sort compare |> List.sort (fun x y -> compare (nb_comp y) (nb_comp x)) in
+  (* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
+  Printf.printf "size= %i\n" (List.length sg);
+  List.iter D2.print sg
+
+
+let _ =
+  let planar = seq Okada 4 [B; P] in
   Printf.printf "planar labelled : %s\n" (sol planar);
   (* List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n"; *)
-  draw_diagram()
+  Output.draw_diagram()
