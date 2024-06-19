@@ -20,6 +20,7 @@ module Utils = struct
     List.map (function Unique node -> Unique node | Few (lab, l) -> Few (lab, List.fast_sort compare l)) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
 end
 
+let _ = Random.self_init()
 module Make (P: sig val k : int end) = struct
   type t = diagram
 
@@ -30,7 +31,8 @@ module Make (P: sig val k : int end) = struct
   (*   | Few (n, _), Unique n' *)
   (*   | Few (n, _), Few (n', _) -> min (abs n) (abs n') *)
 
-  let law2 x y = (( x)+( y)) mod (2*P.k)
+  let law2 x y = min (abs x) (abs y)
+     (* if Random.bool() then min (abs x) (abs y) else max (abs x) (abs y) *)
   let law_mult (l : int list) : int = List.fold_left law2 P.k l
 
   let of_unlabelled f ill =

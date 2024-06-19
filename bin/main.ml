@@ -27,15 +27,15 @@ let nb_composante d =
 let okada2() =
   let module Okada = Lib.Labelled.Make(struct let k = 2 end) in
   let open Lib.Diagram in
-  let gens = [B; P; Id] in
-  let gens_d =
+  let gens = [B; P] in
+  let _gens_d =
     let generate_generators f imax = if imax >= 0 then List.init imax Int.succ |> List.map f else [] in
     List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map Okada.get_generator gens))
     |> List.map Lib.Labelled.Utils.sort
   in
-  List.iter Okada.print gens_d; Okada.print []
-  (* let planar = Okada.generate gens |> List.sort (fun x y -> compare (nb_composante y) (nb_composante x)) in *)
-  (* List.iter Okada.print planar *)
+  (* List.iter Okada.print gens_d; Okada.print [] *)
+  let planar = Okada.generate gens |> List.sort (fun x y -> compare (nb_composante y) (nb_composante x)) in
+  List.iter Okada.print planar
 
 let _ =
   let planar =
