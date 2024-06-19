@@ -15,7 +15,7 @@ let make (elts : 'a list) (concat : 'a -> 'a -> 'a) (sort : 'a -> 'a) f : 'a lis
       if not (Hashtbl.mem cache d) then
       begin
         Hashtbl.replace cache (sort d) true;
-        let nexts = List.map (concat d) elts in
+        let nexts = List.map (concat d) elts @ List.map (fun d' -> concat d' d) elts in
         (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
         List.iter (fun concated -> loop (Some concated)) nexts
       end

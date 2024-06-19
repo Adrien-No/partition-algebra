@@ -26,15 +26,15 @@ let okada2() =
   List.iter Okada.print planar
 
 let _ =
-  (* let planar = *)
-  (*   List.init 6 (fun k -> *)
-  (*       let module Okada = Lib.Labelled.Make(struct let k = k end) in *)
-  (*       let planar = Okada.generate [B; P; Id] in *)
-  (*       planar) in *)
-  (* let planar_seq = List.map List.length planar in *)
-  (* Lib.Toolbox.string_of_int_list planar_seq |> Printf.printf "planar Okada: %s\n"; *)
-  (* Lib.Toolbox.string_of_int_list (List.map (fun x -> Lib.Maths.prime_decomp x |> List.length ) planar_seq) |> Printf.printf "nb_decomp: %s\n"; *)
-  (* okada2(); *)
+  let planar =
+    List.init 6 (fun k ->
+        let module Okada = Lib.Labelled.Make(struct let k = k end) in
+        let planar = Okada.generate [B; P; Id] in
+        planar) in
+  let planar_seq = List.map List.length planar in
+  String.concat " "(planar_seq |> List.map string_of_int |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "planar Okada:";
+  String.concat " " (List.map (fun x -> Lib.Maths.prime_decomp x |> List.map string_of_int |> String.concat "x") planar_seq |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "decomposition :";
+  okada2();
 
   let module Okada = Lib.Labelled.Make(struct let k = 4 end) in
   (* Okada.print (Okada.b 2); *)
