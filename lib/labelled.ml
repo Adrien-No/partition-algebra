@@ -23,14 +23,15 @@ end
 module Make (P: sig val k : int end) = struct
   type t = diagram
 
-  let law (x: cl) (y: cl) : int =
-    match x, y with
-    | Unique n, Unique n'
-    | Unique n, Few (n',_)
-    | Few (n, _), Unique n'
-    | Few (n, _), Few (n', _) -> min (abs n) (abs n')
+  (* let law (x: cl) (y: cl) : int = *)
+  (*   match x, y with *)
+  (*   | Unique n, Unique n' *)
+  (*   | Unique n, Few (n',_) *)
+  (*   | Few (n, _), Unique n' *)
+  (*   | Few (n, _), Few (n', _) -> min (abs n) (abs n') *)
 
-  let law_mult (l : int list) : int = List.fold_left (fun x y -> (* Printf.printf "(%i, %i)\n" x y; *) min (abs x) (abs y)) P.k l
+  let law2 x y = (( x)+( y)) mod (2*P.k)
+  let law_mult (l : int list) : int = List.fold_left law2 P.k l
 
   let of_unlabelled f ill =
     (* let f' = fun l -> List.map (fun x -> x mod P.k) l |> f in *)
@@ -71,7 +72,7 @@ module Make (P: sig val k : int end) = struct
 
   let diagram_counter = ref 0
   let print (diagram: t) =
-    let g = to_graph diagram in
+    let g = if diagram = [] then Draw.G.empty else to_graph diagram in
     let file =
       try (* depending on the caller-folder (test or bin), the path isn't the same  *)
         open_out (Sys.getcwd() ^ "/../../../../img/diagram"^string_of_int !diagram_counter ^".dot")
@@ -155,7 +156,6 @@ module Make (P: sig val k : int end) = struct
 
     (* print_ill c; *)
     let c =
-      (* let get_label = List.fold_left (fun x y -> min x (abs (y mod P.k +1))) P.k in *)
       let rec loop l acc = (* we suppose that labels are in external form *)
         match l with
         | [] -> acc
@@ -164,9 +164,9 @@ module Make (P: sig val k : int end) = struct
         | [node]::q                   -> loop q (Unique (node-P.k)::acc)
         | nodes ::q ->
           let new_nodes_with_label = List.fold_left (fun (label, init) -> function
-              | node when node < P.k   -> min label (abs (Option.get a_labels.(node))), node::init
+              | node when node < P.k   -> law2 label ( (Option.get a_labels.(node))), node::init
               | node when node < P.k*2 -> label, init
-              | node                   -> min label (abs (Option.get b_labels.(node-P.k))), node-P.k::init
+              | node                   -> law2 label ( (Option.get b_labels.(node-P.k))), node-P.k::init
             ) (P.k, []) nodes in
           match new_nodes_with_label with
           | _, []  -> loop q acc
