@@ -27,6 +27,8 @@ let seq algebra k_max gens =
 
 module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
 module D2 = Lib.Labelled.Make(Okada2)
+open Lib.Diagram
+let gens = [B; P; Id]
 
 (* on défini le nombre de composante comme le nb de sous-ensemble de taile > 1 *)
 let nb_comp =
@@ -34,14 +36,16 @@ let nb_comp =
 
 let _ =
   (* D2.print_empty() *)
-  let sg = D2.generate [B; P] |> List.sort compare |> List.sort (fun x y -> compare (nb_comp y) (nb_comp x)) in
+  let sg = D2.generate gens |> List.sort compare |> List.sort (fun x y -> compare (nb_comp y) (nb_comp x)) in
   (* List.iter (fun d -> D2.print_as_string d; print_newline()) sg; *)
-  Printf.printf "size= %i\n" (List.length sg);
+  (* Printf.printf "size= %i\n" (List.length sg); *)
   List.iter D2.print sg
 
 
 let _ =
-  let planar = seq Okada 4 [B; P] in
-  Printf.printf "planar labelled : %s\n" (sol planar);
+  let planar_seq = seq Okada 4 gens in
+  String.concat " "(planar_seq |> List.map string_of_int |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "planar Okada :";
+  String.concat " " (List.map (fun x -> Lib.Maths.prime_decomp x |> List.map string_of_int |> String.concat "x") planar_seq |> List.map (Printf.sprintf "%10s")) |> Printf.printf "%15s %s\n" "decomposition :";
+
   (* List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n"; *)
   Output.draw_diagram()

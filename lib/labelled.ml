@@ -185,7 +185,7 @@ module Make (P: PARAM) : (Diagram.t with type t = P.t) = struct
     let b_labels = Array.make (2*P.k) None in
     List.iter (fun (lab, l) -> List.iter (fun x -> b_labels.(x) <- Some lab) l) b;
 
-    let get_c_cl_label (cl: int list) =
+    let get_c_cl_label (cl: int list) = (* TODO calcule du label "a la volée", pour éviter d'utiliser law_list initialisé à k mais plutôt a_labels/b_labels *)
       (* cl is the final composante in c *)
       let labels = List.fold_left (fun acc n ->
           match n with

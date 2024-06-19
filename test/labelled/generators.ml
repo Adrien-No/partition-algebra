@@ -71,3 +71,14 @@
 (*   generators_extended(); *)
 (*   print_empty() *)
 (*   (\* p 1 @ p 2 |> print *\) *)
+
+
+module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
+module D2 = Lib.Labelled.Make(Okada2)
+open Lib.Diagram
+let gens = [B; P; Id]
+
+let _ =
+  let open D2 in
+  let app_nd_show l = List.fold_left (fun x y -> print x; x@y) id l in
+  app_nd_show [b 1; p 1 ; p 2] |> print
