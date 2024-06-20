@@ -28,7 +28,7 @@ let seq algebra k_max gens =
 module Okada2 = Lib.Labelled.Okada(struct let k = 2 end)
 module D2 = Lib.Labelled.Make(Okada2)
 open Lib.Diagram
-let gens = [B; P; Id]
+let gens = [B; P]
 
 (* on défini le nombre de composante comme le nb de sous-ensemble de taile > 1 *)
 let nb_comp =

@@ -13,11 +13,17 @@ let make (elts : 'a list) (concat : 'a -> 'a -> 'a) (sort : 'a -> 'a) : 'a list 
     match d with
     | None -> List.iter (fun concated -> loop (Some concated)) elts
     | Some d ->
-      if not (Hashtbl.mem cache d) then
-      begin
-        Hashtbl.replace cache (sort d) true;
+      (* match Hashtbl.find_opt cache d with *)
+      (* | None -> Hashtbl.add cache d 1; *)
+      (*   let nexts = List.map (concat d) elts @ List.map (fun d' -> concat d' d) elts in *)
+      (*   List.iter (fun concated -> loop (Some concated)) nexts *)
+      (* | Some n when n < 10 -> Hashtbl.replace cache d (n+1); *)
+      (*   let nexts = List.map (concat d) elts @ List.map (fun d' -> concat d' d) elts in *)
+      (*   List.iter (fun concated -> loop (Some concated)) nexts *)
+      (* | _ -> () *)
+      if not (Hashtbl.mem cache d) then begin
+        Hashtbl.replace cache d true;
         let nexts = List.map (concat d) elts @ List.map (fun d' -> concat d' d) elts in
-        (* List.iter (fun d -> Hashtbl.add cache d ()) nexts; *)
         List.iter (fun concated -> loop (Some concated)) nexts
       end
   in

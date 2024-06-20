@@ -42,6 +42,8 @@ module type PARAM = sig
   type t = (label * node list) list
   (* le même t que t.t *)
   val k : int
+  val lab0 : label
+  val law2 : label -> label -> label
   val law : label list -> label (* law is the composition law on labels used to determine the new label after concat *)
   val init_label : node list -> label (* used to init labels of cls of a generator *)
   val check : t -> bool
@@ -179,31 +181,73 @@ module Make (P: PARAM) : (Diagram.t with type t = P.t) = struct
 
     (* [4] compute diagram labels*)
     (* Theses arrays stores labels of each elts of diagrams *)
+    (* TODO convert a_labels to P.label list, without option ? *)
     let a_labels = Array.make (2*P.k) None in
     List.iter (fun (lab, l) -> List.iter (fun x -> a_labels.(x) <- Some lab) l) a;
 
     let b_labels = Array.make (2*P.k) None in
     List.iter (fun (lab, l) -> List.iter (fun x -> b_labels.(x) <- Some lab) l) b;
 
-    let get_c_cl_label (cl: int list) = (* TODO calcule du label "a la volée", pour éviter d'utiliser law_list initialisé à k mais plutôt a_labels/b_labels *)
-      (* cl is the final composante in c *)
-      let labels = List.fold_left (fun acc n ->
-          match n with
-          | n when n < P.k -> Option.get a_labels.(n)::acc
-          | n when n < 2*P.k -> acc
-          | n -> Option.get b_labels.(n-P.k)::acc
-        ) [] cl in
-      P.law labels
-    in
-    let f =
-      function
-      | n when n <   P.k -> Some n
-      | n when n < 2*P.k -> None
-      | n    (*n < 3*P.k*) -> Some (n-P.k)
-    in
-    let toobig_res = of_unlabelled get_c_cl_label c in
-    let good_size_res = Utils.filter_map f toobig_res in
-    Utils.sort good_size_res
+    let c =
+      let rec loop l acc = (* we suppose that labels are in external form *)
+        match l with
+        | [] -> acc
+        | []::q -> failwith "impossible"
+        | [node]::q when node < P.k   -> loop q ((Option.get a_labels.(node), [node])::acc)
+        | [node]::q when node < P.k*2 -> loop q acc
+        | [node]::q                   -> loop q ((Option.get b_labels.(node-P.k), [node-P.k])::acc)
+        | nodes ::q ->
+          let new_nodes_with_label = List.fold_left (fun (label, init) -> function
+              | node when node < P.k   -> P.law2 label ( (Option.get a_labels.(node))), node::init
+              | node when node < P.k*2 -> label, init
+              | node                   -> P.law2 label ( (Option.get b_labels.(node-P.k))), node-P.k::init
+            ) (P.lab0, []) nodes in
+          match new_nodes_with_label with
+          | _, []  -> loop q acc
+          | c -> loop q (c::acc)
+          (* | lab, [x] -> loop q ((labx::acc) *)
+          (* | lab, l   -> loop q (Few (lab, l)::acc) *)
+      in
+      loop c []
+    in Utils.sort c
+
+
+    (* let get_c_cl_label (cl: int list) = (\* TODO calcule du label "a la volée", pour éviter d'utiliser law_list initialisé à k mais plutôt a_labels/b_labels *\) *)
+    (*   (\* cl is the final composante in c *\) *)
+    (*   let rec loop cl label_acc = *)
+    (*     match cl with *)
+    (*     | [] -> label_acc *)
+    (*     | n::q -> *)
+    (*       let get_new_lab lab' = *)
+    (*         match label_acc with *)
+    (*         | None -> Some lab' *)
+    (*         | Some lab -> Some (P.law2 lab lab') *)
+    (*       in *)
+    (*       match n with *)
+    (*       | n when n < P.k ->   loop q (get_new_lab (Option.get a_labels.(n))) *)
+    (*       | n when n < 2*P.k -> loop q label_acc *)
+    (*       | n -> loop q (get_new_lab (Option.get b_labels.(n-P.k))) *)
+    (*   in *)
+    (*   loop cl None |> Option.get *)
+
+    (*   (\* let labels = List.fold_left (fun acc n -> *\) *)
+    (*   (\*     match n with *\) *)
+    (*   (\*     | n when n < P.k -> Option.get a_labels.(n)::acc *\) *)
+    (*   (\*     | n when n < 2*P.k -> acc *\) *)
+    (*   (\*     | n -> Option.get b_labels.(n-P.k)::acc *\) *)
+    (*   (\*   ) [] cl in *\) *)
+
+    (*   (\* P.law labels *\) *)
+    (* in *)
+    (* let f = *)
+    (*   function *)
+    (*   | n when n <   P.k -> Some n *)
+    (*   | n when n < 2*P.k -> None *)
+    (*   | n    (\*n < 3*P.k*\) -> Some (n-P.k) *)
+    (* in *)
+    (* let toobig_res = of_unlabelled (function [] -> failwith "error" | l -> get_c_cl_label l) c in *)
+    (* let good_size_res = Utils.filter_map f toobig_res in *)
+    (* Utils.sort good_size_res *)
 
   let generator_builder i imax (f: int -> int list list) =
     range_test i 1 imax;
@@ -279,7 +323,9 @@ module Okada (P : sig val k : int end) : PARAM = struct
   type node = int
   type t = (label * node list) list
   let k = P.k
+  let lab0 = P.k
   (* [law labels] computes the resulted label obtained by applying a fixed law to [labels] 2by2. (labels are already in unconverted mode : in set [-k; k]\{0}) (but k>0)) *)
+  let law2 x y = min (abs x) (abs y)
   let law = List.fold_left (fun x y -> min (abs x) (abs y)) k
   (* [init_label nodes] is [law (map Toolbox.externalize nodes)]. Indeed, nodes aren't yet converted.*)
   let init_label nodes = law (List.map (Toolbox.externalize k) nodes)
