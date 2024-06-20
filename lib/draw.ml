@@ -5,18 +5,18 @@
 let w_vertex, h_vertex = 1, 1
 
 module Node : (Graph.Sig.COMPARABLE with type t = int) = struct
-   type t = int
-   let compare = compare
-   let hash = Hashtbl.hash
-   let equal = (=)
+  type t = int
+  let compare = compare
+  let hash = Hashtbl.hash
+  let equal = (=)
 end
 
 (* representation of an edge -- must be comparable *)
 module Edge = struct
-   type t = string
-   let compare = compare
-   let equal = (=)
-   let default = ""
+  type t = string
+  let compare = compare
+  let equal = (=)
+  let default = ""
 end
 
 (* a functional/persistent graph *)
@@ -29,35 +29,35 @@ module type P = sig val k : int end
 (* module for creating dot-files *)
 module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
 
-   include G (* use the graph module from above *)
-   let edge_attributes (_a, e, _b) =
-     let label =
-       if e = "" then ""
-       else
-           e |> int_of_string (* |> Toolbox.unconvert P.k |> abs *) |> string_of_int
-    in
-     [`Label label; `Color 4711]
-   (* Node.t * Edge.t * Node.t = E.t *)
-   (* let edge_attributes ((_a, e, _b): Node.t * Edge.t * Node.t) = Printf.printf "attribute: %s\n" e; [`Label e; `Weight (float_of_string e)] *)
-   let default_edge_attributes _ = []
-   let get_subgraph _ = None
+    include G (* use the graph module from above *)
+    let edge_attributes (_a, e, _b) =
+      let label =
+        if e = "" then ""
+        else
+          e |> int_of_string (* |> Toolbox.unconvert P.k |> abs *) |> string_of_int
+      in
+      [`Label label; `Color 4711]
+    (* Node.t * Edge.t * Node.t = E.t *)
+    (* let edge_attributes ((_a, e, _b): Node.t * Edge.t * Node.t) = Printf.printf "attribute: %s\n" e; [`Label e; `Weight (float_of_string e)] *)
+    let default_edge_attributes _ = []
+    let get_subgraph _ = None
 
-   let vertex_attributes v =
-     let x, y =
-       if v < P.k then
-         v, 1
-       else
-         (v-P.k), 0
-     in
-     (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
-     (* in *)
-     [`Shape `Circle; `Pos (float_of_int (x+w_vertex), float_of_int (y+h_vertex))]
+    let vertex_attributes v =
+      let x, y =
+        if v < P.k then
+          v, 1
+        else
+          (v-P.k), 0
+      in
+      (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
+      (* in *)
+      [`Shape `Circle; `Pos (float_of_int (x+w_vertex), float_of_int (y+h_vertex))]
 
-   let vertex_name (v: int) : string = Toolbox.unconvert P.k v |> string_of_int
+    let vertex_name (v: int) : string = Toolbox.unconvert P.k v |> string_of_int
 
-  let default_vertex_attributes _ = []
-  let graph_attributes _ = [`Spline true]
-end)
+    let default_vertex_attributes _ = []
+    let graph_attributes _ = [`Spline true]
+  end)
 
 let dot_as_graph file g k =
   let module Dot = Dot(struct let k = k end : P) in

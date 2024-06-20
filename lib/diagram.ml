@@ -3,9 +3,11 @@
 type generators =
   S | P | B | E | L | R | Id
 
+type diagram_t
+
 module type t = sig
   type label
-  type t
+  type t = diagram_t
   val of_ill : int list list -> t
 
   val print : t -> unit
