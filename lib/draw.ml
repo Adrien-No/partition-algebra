@@ -51,7 +51,7 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
      in
      (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
      (* in *)
-     [`Shape `Circle; `Pos (float_of_int (x+w_vertex), float_of_int (y+h_vertex))]
+     [`Shape `Circle; `Pos (float_of_int (y+h_vertex), float_of_int (x+w_vertex))]
 
    let vertex_name (v: int) : string = Toolbox.unconvert P.k v |> string_of_int
 

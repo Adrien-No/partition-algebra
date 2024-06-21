@@ -18,9 +18,11 @@ module Utils = struct
 
   let sort (l: diagram) =
     List.map (function Unique node -> Unique node | Few (lab, l) -> Few (lab, List.fast_sort compare l)) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
+
 end
 
-let _ = Random.self_init()
+let diagram_counter = ref 0
+
 module Make (P: sig val k : int end) = struct
   type t = diagram
 
@@ -72,7 +74,6 @@ module Make (P: sig val k : int end) = struct
     in
     loop_diagram diagram g
 
-  let diagram_counter = ref 0
   let print (diagram: t) =
     let g = if diagram = [] then Draw.G.empty else to_graph diagram in
     let file =
@@ -239,8 +240,8 @@ module Make (P: sig val k : int end) = struct
       List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens))
       |> List.map Utils.sort
     in
-    Generate_semigroup.make gens concat Utils.sort to_string
+    Generate_semigroup.make gens concat Utils.sort
 
   let (===) = (=)
-  let (@) = concat
+  let (@@@) = concat
 end
