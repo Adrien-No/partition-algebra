@@ -1,3 +1,5 @@
+(* NOTE ne pas confondre l'opération de concaténation @ avec celle pour les listes. *)
+
 Printexc.record_backtrace true
 
 let print_ill l =
@@ -32,6 +34,31 @@ module Make (P: sig val k : int end) = struct
   (*   | Unique n, Few (n',_) *)
   (*   | Few (n, _), Unique n' *)
   (*   | Few (n, _), Few (n', _) -> min (abs n) (abs n') *)
+
+  let check (d: (cl list)) = (* check if diagram d is an Okada diagram *)
+    let d = Utils.map (Toolbox.externalize P.k) d in (* mieux de convertir pour utiliser directement les propriétés telles que définies *)
+    let d = List.map (function Unique node -> node, [node] | Few (lab, nodes) -> lab, nodes) d in
+    let nelts_condition (d: (int * int list) list) =
+      let nelts = (List.fold_left (fun acc (_, l) -> acc + List.fold_left (fun acc _ -> acc+1) 0 l) 0 d) in
+      if nelts = P.k*2 then true else failwith (Printf.sprintf "cardinal_condition : expected %i, got %i " (P.k*2) nelts)
+    and is_non_crossing (x, y) (x', y')=
+      let x , y  = min (abs x)  (abs y ), max (abs x ) (abs y)
+      and x', y' = min (abs x') (abs y'), max (abs x') (abs y') in
+      if x <= y && x' <= y' || x >= y && x' >= y' then true else failwith (Printf.sprintf "edges (%i, %i) and (%i, %i) are crossing" x y x' y')
+    and label_condition = function (lab, [x; y]) -> 1 <= lab && lab <= (min (abs x) (abs y)) | _ -> failwith "label_conditions: couplage imparfait"
+    and parity_condition = function (lab, [x; y]) -> lab mod 2 = (min (abs x) (abs y)) mod 2 | _ -> failwith "parity_conditions: couplage imparfait"
+    and nested (lab, (x, y)) (lab', (x', y')) =
+      let a, b = min (abs x) (abs y) , max (abs x) (abs y)
+      and c, d = min (abs x')(abs y'), max (abs x')(abs y') in
+      not (c < a && a < b && b < d) (* is nested ? *)
+      || lab < lab' |> fun x -> if x then true else failwith (Printf.sprintf "[nesting] (%i, %i) isn't under (%i, %i)" a b c d)
+    in
+    nelts_condition d
+    && List.for_all (function ((lab, [x; y]), (lab', [x'; y'])) -> is_non_crossing (x, y) (x', y') && nested (lab, (x, y)) (lab', (x', y')) | _ -> failwith "couplage imparfait")
+      (Toolbox.carthesian_product d d) (* /!\ expensive *)
+    && List.for_all (fun cl -> label_condition cl && parity_condition cl) d
+
+  let check_test d = if check d then () else failwith "diagramme mal formé"
 
   let law2 x y = min (abs x) (abs y)
      (* if Random.bool() then min (abs x) (abs y) else max (abs x) (abs y) *)
@@ -75,6 +102,7 @@ module Make (P: sig val k : int end) = struct
     loop_diagram diagram g
 
   let print (diagram: t) =
+    (* check_test diagram; *)
     let g = if diagram = [] then Draw.G.empty else to_graph diagram in
     let file =
       try (* depending on the caller-folder (test or bin), the path isn't the same  *)
@@ -244,4 +272,60 @@ module Make (P: sig val k : int end) = struct
 
   let (===) = (=)
   let (@@@) = concat
+  let (@) = concat
+
+  let externalize node = Toolbox.externalize P.k node
+  let internalize node = Toolbox.internalize P.k node
+
+  let length (d: diagram) =
+    let compute_edge = function
+      | Few (lab, [src; dst]) -> (externalize src |> abs) + (externalize dst |> abs) - (2 * lab)
+      | _ -> failwith "unimplemented" (* for now we only works with temperley-lieb *)
+    in
+    List.map compute_edge d
+    |> List.fold_left (+) 0
+    |> (/)2
 end
+
+
+let print_list k gens =
+  List.init k (fun k ->
+  let module M = Make (struct let k = k end) in
+  M.generate gens |> List.length |> string_of_int
+            ) |> String.concat "," |> Printf.printf "{%s}\n"
+
+let max3 x y z = max (max x y) z
+
+let rec factorize_right (d: diagram) k = (* NOTE can really be optimized in term of constant factor *)
+  let d = List.map (function  Few (lab, l) -> lab, List.map (Toolbox.externalize k) l | Unique _ -> failwith "not perfect matching diagram") d in
+  (* we suppose that we are in Temperley-Lieb, with an externalized diagram *)
+  let rec larger_descent d acc : int = (* we could don't know if/how d is sorted so we explore all the diagram *)
+    match d with
+    | Few (lab, [src; dst])::q -> if src < 0 && dst < 0 && lab = -src && abs dst = (abs src)+1 then larger_descent q (max acc lab) else larger_descent q acc
+    | [] -> acc
+    | _ -> failwith "not perfect matching diagram"
+  in
+  let ldes = larger_descent d min_int in
+  Printf.printf "k= %i, ldes= %i\n" k ldes;
+  if k < 2 || ldes < 1 then
+    (* deja factorisé *)
+    []
+  else begin
+    let b_transform j =
+      if j = k then -(k-1)
+      else j
+    and b_bar_transform j =
+      if j > ldes then -(j-2) else j
+    in
+    let surge_edge = function
+      | Few (lab, [src; dst]) when lab = ldes (* && src = -ldes && dst = -ldes *) -> Few (k, [k; -k])
+      | Few (lab, [src; dst]) -> Few (lab, [b_transform src; b_bar_transform dst])
+      | _ -> failwith "not perfect matching diagram"
+    in
+    let new_d = List.map surge_edge d in
+    let restrict = List.fold_left (fun init -> function Few (lab, [src; dst]) when lab = k -> init | edge -> edge::init) [] new_d in (* we could simplify by removing Few(k, [k; -k]) in surge_edge *)
+    List.init ldes (fun i ->
+      let i = k - i - 1 in (i(* , (E : Diagram.generators) *))
+    ) @ factorize_right restrict (k-1)
+
+  end

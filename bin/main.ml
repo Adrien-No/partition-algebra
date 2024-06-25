@@ -1,3 +1,5 @@
+open Lib.Diagram
+
 (* (\* Modifie les fichiers .dot représentant les diagrammes à afficher de telle sorte à corriger les erreurs typographiques de la bibliothèque ocamlgraph.graphviz provoquant des bugs (mauvaise génération des fichiers .dot) *\) *)
 
 let draw_diagram () =
@@ -51,8 +53,11 @@ let nb_composante d =
 (*   Random_generate.okada 5 [E]; *)
 (*   draw_diagram() *)
 
+let g_temperleylieb = [E; Id]
+let g_planar = [P; B; Id]
+
 let _ =
-  (* for k = 1 to 6 do *)
-    Half_diagrams.make 3 [E; Id];
-    draw_diagram()
-  (* done *)
+  let module D = Lib.Labelled.Make(struct let k = 5 end) in
+  let open D in
+  print (e 2 @ e 1 @ e 3 @ e 2 @ e 4 @ e 3);
+  draw_diagram()

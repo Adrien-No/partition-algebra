@@ -1,3 +1,5 @@
+let (>>>) f g = fun x -> g (f x)
+
 (** [internalize k i] converts i in a diagram of size 2k from set [-k; k]\{0} to set [0; 2k-1].
     It correspond to the external (resp internal) numerotation of diagram vertices. *)
 let internalize k x =
@@ -22,3 +24,7 @@ let carthesian_product l l' = carthesian_product [] l l'
 
 let string_of_int_list l =
   List.map string_of_int l |> String.concat " "
+
+let int_sqrt n =
+  let sqrt = sqrt (float_of_int n) in
+  if Float.is_integer sqrt then int_of_float sqrt else failwith (Printf.sprintf "%i n'est pas un carre" n)

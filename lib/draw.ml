@@ -45,9 +45,9 @@ module Dot (P: sig val k : int end) = Graph.Graphviz.Neato(struct
    let vertex_attributes v =
      let x, y =
        if v < P.k then
-         v, 1
+         v, 0
        else
-         (v-P.k), 0
+         (v-P.k), 1
      in
      (* let x, y = (if v > 0 then v else P.k+v+1) * w_vertex |> float_of_int, if v > 0 then h_vertex else 0. *)
      (* in *)

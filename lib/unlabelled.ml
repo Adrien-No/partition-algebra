@@ -47,7 +47,7 @@ module type DIAGRAM = sig
   val print_empty : unit -> unit
 end
 
-module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = struct
+module Make (P: sig val k : int end) (* : Diagram.t with type t = int list list*) = struct
   (* En interne, les diagrammes sont numérotés *)
   (* de 0 à k-1 (en haut, de gauche à droite) *)
   (* puis de k à 2k-1 (en bas, de gauche à droite) *)
@@ -217,6 +217,29 @@ module Diagram (P: sig val k : int end) : DIAGRAM with type t = int list list = 
   let l i = s i @ p i
 
   let r i = p i @ s i
+
+    let get_generator =
+    let open Diagram in
+    function
+    | S -> s, P.k-1
+    | P -> p, P.k
+    | B -> b, P.k-1
+    | E -> e, P.k-1
+    | L -> l, P.k-1
+    | R -> r, P.k-1
+    | Id -> (fun _ -> id), 1
+
+  let print_as_string () = failwith "unimplemented"
+
+  let generate (gens: Diagram.generators list) =
+    let open Diagram in
+    let gens =
+      let generate_generators f imax = if imax >= 0 then List.init imax Int.succ |> List.map f else [] in
+      List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens))
+      |> List.map Utils.sort
+    in
+    Generate_semigroup.make gens concat Utils.sort
+
 end
 
 (* (\* NOTE (à améliorer) *)
