@@ -57,7 +57,7 @@ let g_temperleylieb = [E; Id]
 let g_planar = [P; B; Id]
 
 let _ =
-  let module D = Lib.Labelled.Make(struct let k = 5 end) in
-  let open D in
-  print (e 2 @ e 1 @ e 3 @ e 2 @ e 4 @ e 3);
+  (* let module D = Lib.Labelled.Make(struct let k = 5 end) in *)
+  (* let open D in *)
+  (* print (e 2 @ e 1 @ e 3 @ e 2 @ e 4 @ e 3); *)
   draw_diagram()

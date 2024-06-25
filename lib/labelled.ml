@@ -61,7 +61,7 @@ module Make (P: sig val k : int end) = struct
   let check_test d = if check d then () else failwith "diagramme mal formé"
 
   let law2 x y = min (abs x) (abs y)
-     (* if Random.bool() then min (abs x) (abs y) else max (abs x) (abs y) *)
+  (* if Random.bool() then min (abs x) (abs y) else max (abs x) (abs y) *)
   let law_mult (l : int list) : int = List.fold_left law2 P.k l
 
   let of_unlabelled f ill =
@@ -290,42 +290,56 @@ end
 
 let print_list k gens =
   List.init k (fun k ->
-  let module M = Make (struct let k = k end) in
-  M.generate gens |> List.length |> string_of_int
-            ) |> String.concat "," |> Printf.printf "{%s}\n"
+      let module M = Make (struct let k = k end) in
+      M.generate gens |> List.length |> string_of_int
+    ) |> String.concat "," |> Printf.printf "{%s}\n"
 
 let max3 x y z = max (max x y) z
 
-let rec factorize_right (d: diagram) k = (* NOTE can really be optimized in term of constant factor *)
-  let d = List.map (function  Few (lab, l) -> lab, List.map (Toolbox.externalize k) l | Unique _ -> failwith "not perfect matching diagram") d in
-  (* we suppose that we are in Temperley-Lieb, with an externalized diagram *)
-  let rec larger_descent d acc : int = (* we could don't know if/how d is sorted so we explore all the diagram *)
-    match d with
-    | Few (lab, [src; dst])::q -> if src < 0 && dst < 0 && lab = -src && abs dst = (abs src)+1 then larger_descent q (max acc lab) else larger_descent q acc
-    | [] -> acc
-    | _ -> failwith "not perfect matching diagram"
+let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of constant factor *)
+  let d = List.map (function  Few (lab, [src; dst]) -> lab, (Toolbox.externalize k src, Toolbox.externalize k dst)  | _ -> failwith "not perfect matching diagram") d in
+  let rec aux d k =
+    (* we suppose that we are in Temperley-Lieb, with an externalized diagram *)
+    let rec larger_descent d acc : int = (* we could don't know if/how d is sorted so we explore all the diagram *)
+      match d with
+      | (lab, (src, dst))::q -> if src < 0 && dst < 0 && lab = -src && abs dst = (abs src)+1 then larger_descent q (max acc lab) else larger_descent q acc
+      | [] -> acc
+      (* | _ -> failwith "not perfect matching diagram" *)
+    in
+    let ldes = larger_descent d min_int in
+    Printf.printf "k= %i, ldes= %i\n" k ldes;
+    let rec test_k_propagating d =
+      match d with
+      | (lab, (src, dst))::q when lab = src && src = -dst -> true
+      | _::q -> test_k_propagating q
+      | [] -> false
+    in
+    let restrict = List.fold_left (fun init (lab, edge) -> if lab = k then init else (lab, edge)::init) [] in (* TODO à débugger *)
+    if k < 2 || ldes < 1 then
+      (* deja factorisé *)
+      []
+    else if test_k_propagating d then aux (restrict d) (k-1)
+    else
+      let b_transform j =
+        if j = k then -(k-1)
+        else j
+      and b_bar_transform j =
+        if j > ldes then -(j-2) else j
+      in
+      let sort_edge x y =
+        if x < 0 && y > 0 then y, x
+        else if x > 0 && y < 0 then x, y
+        else failwith "edges can't be sorted"
+      in
+      let surge_edge = function
+        | (lab, (src, dst)) when lab = ldes (* && src = -ldes && dst = -ldes *) -> (k, (k, -k))
+        | (lab, (src, dst)) -> (lab, (sort_edge (b_transform src) (b_bar_transform dst)))
+        (* | _ -> failwith "unfound edge, not perfect matching diagram" *)
+      in
+      let new_d = List.map surge_edge d in
+      let restricted = restrict new_d in
+      List.init (k-ldes) (fun i ->
+          let i = k - i in (i(* , (E : Diagram.generators) *))
+        ) @ aux restricted (k-1)
   in
-  let ldes = larger_descent d min_int in
-  Printf.printf "k= %i, ldes= %i\n" k ldes;
-  if k < 2 || ldes < 1 then
-    (* deja factorisé *)
-    []
-  else begin
-    let b_transform j =
-      if j = k then -(k-1)
-      else j
-    and b_bar_transform j =
-      if j > ldes then -(j-2) else j
-    in
-    let surge_edge = function
-      | Few (lab, [src; dst]) when lab = ldes (* && src = -ldes && dst = -ldes *) -> Few (k, [k; -k])
-      | Few (lab, [src; dst]) -> Few (lab, [b_transform src; b_bar_transform dst])
-      | _ -> failwith "not perfect matching diagram"
-    in
-    let new_d = List.map surge_edge d in
-    let restrict = List.fold_left (fun init -> function Few (lab, [src; dst]) when lab = k -> init | edge -> edge::init) [] new_d in (* we could simplify by removing Few(k, [k; -k]) in surge_edge *)
-    List.init ldes (fun i ->
-      let i = k - i - 1 in (i(* , (E : Diagram.generators) *))
-    ) @ factorize_right restrict (k-1)
-
-  end
+  aux d k
