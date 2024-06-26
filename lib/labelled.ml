@@ -294,15 +294,21 @@ let print_list k gens =
       M.generate gens |> List.length |> string_of_int
     ) |> String.concat "," |> Printf.printf "{%s}\n"
 
+
+let to_string (d: (int * (int * int)) list) =
+  List.map (fun (label, (x,y)) -> Printf.sprintf "(%i, (%i, %i))" label x y) d |> String.concat " "
+  |> Printf.sprintf "[%s]\n"
+
 let max3 x y z = max (max x y) z
 
 let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of constant factor *)
   let d = List.map (function  Few (lab, [src; dst]) -> lab, (Toolbox.externalize k src, Toolbox.externalize k dst)  | _ -> failwith "not perfect matching diagram") d in
   let rec aux d k =
+    print_string (to_string d);
     (* we suppose that we are in Temperley-Lieb, with an externalized diagram *)
     let rec larger_descent d acc : int = (* we could don't know if/how d is sorted so we explore all the diagram *)
       match d with
-      | (lab, (src, dst))::q -> if src < 0 && dst < 0 && lab = -src && abs dst = (abs src)+1 then larger_descent q (max acc lab) else larger_descent q acc
+      | (lab, (src, dst))::q -> if src < 0 && dst < 0 && lab = abs src && abs dst = (abs src)+1 then larger_descent q (max acc lab) else larger_descent q acc
       | [] -> acc
       (* | _ -> failwith "not perfect matching diagram" *)
     in
@@ -310,15 +316,15 @@ let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of 
     Printf.printf "k= %i, ldes= %i\n" k ldes;
     let rec test_k_propagating d =
       match d with
-      | (lab, (src, dst))::q when lab = src && src = -dst -> true
+      | (lab, (src, dst))::q when lab = k && lab = src && src = -dst -> (* Printf.printf "(lab=%i, (src=%i, dst=%i))\n" lab src dst; *) true
       | _::q -> test_k_propagating q
       | [] -> false
     in
-    let restrict = List.fold_left (fun init (lab, edge) -> if lab = k then init else (lab, edge)::init) [] in (* TODO à débugger *)
-    if k < 2 || ldes < 1 then
+    let restrict = List.fold_left (fun init (lab, edge) -> if lab = k && edge = (k, -k) then init else (lab, edge)::init) [] in (* TODO à débugger *)
+    if k < 2 (* || ldes < 1 *) then
       (* deja factorisé *)
       []
-    else if test_k_propagating d then aux (restrict d) (k-1)
+    else if test_k_propagating d || ldes < 1 then begin Printf.printf "test propagating\n"; aux (restrict d) (k-1) end
     else
       let b_transform j =
         if j = k then -(k-1)
@@ -327,9 +333,11 @@ let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of 
         if j > ldes then -(j-2) else j
       in
       let sort_edge x y =
-        if x < 0 && y > 0 then y, x
-        else if x > 0 && y < 0 then x, y
-        else failwith "edges can't be sorted"
+        if abs x < abs y then x, y else y, x
+        (* min x y, max x y *)
+      (* if x < 0 && y > 0 then y, x *)
+      (* else if x > 0 && y < 0 then x, y *)
+      (* else failwith (Printf.sprintf "edge (%i, %i) can't be sorted" x y) *)
       in
       let surge_edge = function
         | (lab, (src, dst)) when lab = ldes (* && src = -ldes && dst = -ldes *) -> (k, (k, -k))
@@ -338,8 +346,8 @@ let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of 
       in
       let new_d = List.map surge_edge d in
       let restricted = restrict new_d in
-      List.init (k-ldes) (fun i ->
-          let i = k - i in (i(* , (E : Diagram.generators) *))
-        ) @ aux restricted (k-1)
+      aux restricted (k-1) @ List.init (k-ldes) (fun i ->
+          let i = k - i -1 in (i(* , (E : Diagram.generators) *))
+        )
   in
   aux d k
