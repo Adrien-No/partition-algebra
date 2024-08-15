@@ -21,8 +21,8 @@ show:
 	eog img/permanent/output.png &
 
 clear:
-	rm -f img/diagram*.png
-	rm -f img/*.dot
+	# rm -f img/diagram*.png
+	# rm -f img/*.dot
 
 send:
 	echo "Sending email ..."

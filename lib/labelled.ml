@@ -20,7 +20,6 @@ module Utils = struct
 
   let sort (l: diagram) =
     List.map (function Unique node -> Unique node | Few (lab, l) -> Few (lab, List.fast_sort compare l)) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
-
 end
 
 let diagram_counter = ref 0
@@ -301,6 +300,7 @@ let to_string (d: (int * (int * int)) list) =
 
 let max3 x y z = max (max x y) z
 
+(* ==== NOTE doesn't works (used older incorrect factorization alg.) ====*)
 let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of constant factor *)
   let d = List.map (function  Few (lab, [src; dst]) -> lab, (Toolbox.externalize k src, Toolbox.externalize k dst)  | _ -> failwith "not perfect matching diagram") d in
   let rec aux d k =

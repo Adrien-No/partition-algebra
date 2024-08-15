@@ -43,7 +43,7 @@ module type DIAGRAM = sig
   val (@) : t -> t -> t
   val (===) : t -> t -> bool
   val print : t -> unit
-
+  val print_python : t -> unit
   val print_empty : unit -> unit
 end
 
@@ -131,9 +131,20 @@ module Make (P: sig val k : int end) (* : Diagram.t with type t = int list list*
   let diagram_counter = ref 0
   let print (diagram: t) =
     let g = to_graph diagram in
-    let file = open_out (Sys.getcwd() ^ "/../../../img/diagram"^string_of_int !diagram_counter ^".dot") in
+    (* let file = open_out (Sys.getcwd() ^ "/../../../img/diagram"^string_of_int !diagram_counter ^".dot") in *)
+    let file =
+      try (* depending on the caller-folder (test or bin), the path isn't the same  *)
+        open_out (Sys.getcwd() ^ "/../../../../img/diagram"^string_of_int !diagram_counter ^".dot")
+      with Sys_error _ ->
+        open_out (Sys.getcwd() ^ "/img/diagram"^string_of_int !diagram_counter ^".dot")
+    in
     incr diagram_counter;
     Draw.dot_as_graph file g P.k
+
+  let print_python (partition:t) =
+    Utils.map (Toolbox.unconvert P.k) partition
+    |> Toolbox.int_list_list_stringed
+    |> Printf.printf "%s\n"
 
   let print_empty () = print []
 

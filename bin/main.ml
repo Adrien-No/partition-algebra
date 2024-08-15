@@ -14,13 +14,15 @@ let draw_diagram () =
       continue := false
   done
 
-(* let _ = *)
-(*   let planar = generate Okada [B; P; Id] 4 in *)
-(*   Printf.printf "planar labelled : %s\n" (sol planar); List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n"; *)
-(*   let module Okada2 = (val k_okada 2) in *)
-(*   let len, elts = Lib.Generate_semigroup.make Okada2.concat (List.map Okada2.get_generator [B; P; Id]) in *)
-(*   (\* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *\) *)
-(*   List.iter Okada2.print elts; *)
+
+let _ =
+  let open Seqs in
+  let planar = generate Okada [B; P; Id] 4 in
+  Printf.printf "planar labelled : %s\n" (sol planar); List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n";
+  let module Okada2 = (val k_okada 2) in
+  let len, elts = Lib.Generate_semigroup.make Okada2.concat (List.map Okada2.get_generator [B; P; Id]) in
+  (* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *)
+  List.iter Okada2.print elts
 
 let nb_composante d =
   let open Lib.Labelled in
@@ -56,9 +58,21 @@ let nb_composante d =
 let g_temperleylieb = [E; Id]
 let g_planar = [P; B; Id]
 
-let _ =
-  Lib.Labelled.print_list 7 g_temperleylieb;
-  (* print (e 2 @ e 1 @ e 3 @ e 2 @ e 4 @ e 3); *)
-  draw_diagram()
+(* let _ = *)
+(*   Lib.Labelled.print_list 7 g_temperleylieb; *)
+(*   (\* print (e 2 @ e 1 @ e 3 @ e 2 @ e 4 @ e 3); *\) *)
+(*   draw_diagram() *)
 
-(* NOTE ceux qu'ils me manquent sont les idempotents ? *)
+(* (\* NOTE ceux qu'ils me manquent sont les idempotents ? *\) *)
+
+(* let _ = *)
+(*   let module M = Lib.Unlabelled.Make(struct let k = 5 end) in *)
+(*   let open M in *)
+(*   let l = Seqs.generate Seqs.Okada g_temperleylieb 3 in *)
+(*   Lib.Toolbox.string_of_int_list *)
+(*   |> print_string *)
+
+let _ =
+  let module PartitionMonoid = Lib.Labelled.Make(struct let k = 5 end) in
+  let okadaElts5 = PartitionMonoid.generate g_temperleylieb in
+  print_int ()

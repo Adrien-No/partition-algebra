@@ -25,6 +25,16 @@ let carthesian_product l l' = carthesian_product [] l l'
 let string_of_int_list l =
   List.map string_of_int l |> String.concat " "
 
+let int_list_stringed l =
+  List.map string_of_int l
+  |> String.concat ","
+  |> Printf.sprintf "(%s)"
+
+let int_list_list_stringed l =
+  List.map (int_list_stringed) l
+  |> String.concat ","
+  |> Printf.sprintf "(%s)"
+
 let int_sqrt n =
   let sqrt = sqrt (float_of_int n) in
   if Float.is_integer sqrt then int_of_float sqrt else failwith (Printf.sprintf "%i n'est pas un carre" n)
