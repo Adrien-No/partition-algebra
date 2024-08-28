@@ -1,5 +1,5 @@
 (tests
- (names subalgebras okada_relations generators factorization)
+ (names subalgebras okada_relations generators factorization associativite)
  (libraries lib)
  ; (modules subalgebras okada_relations)
 )

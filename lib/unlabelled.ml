@@ -249,7 +249,8 @@ module Make (P: sig val k : int end) (* : Diagram.t with type t = int list list*
       List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens))
       |> List.map Utils.sort
     in
-    Generate_semigroup.make gens concat Utils.sort
+    failwith "todo"
+    (* Generate_semigroup.make gens concat Utils.sort *)
 
 end
 

@@ -12,6 +12,7 @@ mtest:
 	dune runtest -f --profile release # construit les .dot
 
 mbin:
+	make clear
 	make mtest
 	dune build -f --profile release
 	_build/default/bin/main.exe
@@ -21,8 +22,8 @@ show:
 	eog img/permanent/output.png &
 
 clear:
-	# rm -f img/diagram*.png
-	# rm -f img/*.dot
+	rm -f img/diagram*.png
+	rm -f img/*.dot
 
 send:
 	echo "Sending email ..."

@@ -15,14 +15,14 @@ let draw_diagram () =
   done
 
 
-let _ =
-  let open Seqs in
-  let planar = generate Okada [B; P; Id] 4 in
-  Printf.printf "planar labelled : %s\n" (sol planar); List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n";
-  let module Okada2 = (val k_okada 2) in
-  let len, elts = Lib.Generate_semigroup.make Okada2.concat (List.map Okada2.get_generator [B; P; Id]) in
-  (* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *)
-  List.iter Okada2.print elts
+(* let _ = *)
+(*   let open Seqs in *)
+(*   let planar = generate Okada [B; P; Id] 4 in *)
+(*   Printf.printf "planar labelled : %s\n" (sol planar); List.map (fun x -> Lib.Maths.prime_decomp x |> List.length) planar |> sol |> Printf.printf "decomp : %s\n"; *)
+(*   let module Okada2 = (val k_okada 2) in *)
+(*   let len, elts = Lib.Generate_semigroup.make Okada2.concat (List.map Okada2.get_generator [B; P; Id]) in *)
+(*   (\* List.iter (fun d -> Okada2.print_as_string d; print_newline()) elts; *\) *)
+(*   List.iter Okada2.print elts *)
 
 let nb_composante d =
   let open Lib.Labelled in
@@ -55,6 +55,7 @@ let nb_composante d =
 (*   Random_generate.okada 5 [E]; *)
 (*   draw_diagram() *)
 
+let g_partition_monoid = [S; P; B]
 let g_temperleylieb = [E; Id]
 let g_planar = [P; B; Id]
 
@@ -72,7 +73,64 @@ let g_planar = [P; B; Id]
 (*   Lib.Toolbox.string_of_int_list *)
 (*   |> print_string *)
 
+let sub_algebras1 = [(*([S; P; B; Id], "partition"); (* /!\ lancer que pour n = 4 max *)*)
+                    ([P; B; Id], "planar partition");
+                    ([S; E; P; Id], "rook brauer");
+                    ([E; L; R; Id], "Motzkin");
+                    ([S; E; Id], "Brauer"); (* brauer mal générée ? *)
+                    ([E; Id], "Temperley-Lieb");
+                    ([S; P; Id], "Rook");
+                    ([L; R; Id], "planar rook");
+                    ([S; Id], "symmetric group")] (*https://oeis.org/A204262*)
+
+let print_seq (gens, name) =
+  Printf.printf "* %s\n" name;
+  (* Printf.printf "unlabelized :\n"; *)
+  (* for i = 0 to 5 do *)
+  (*   let module PartitionMonoid = Lib.Labelled.Make(struct let k = i end) in *)
+  (*   let semigroup = PartitionMonoid.generate gens in *)
+  (*   let unlab_dimension = List.length (semigroup |> List.sort_uniq Lib.Generate_semigroup.sort_shapely) in *)
+  (*   Printf.printf "%i " (unlab_dimension); *)
+  (* done; *)
+  (* Printf.printf "\nlabelized :\n"; *)
+  for i = 1 to 5 do
+    let module PartitionMonoid = Lib.Labelled.Make(struct let k = i end) in
+    let semigroup = PartitionMonoid.generate gens in
+    let lab_dimension = List.length semigroup in
+    Printf.printf "%i " (lab_dimension);
+  done;
+  print_newline(); print_newline()
+
 let _ =
-  let module PartitionMonoid = Lib.Labelled.Make(struct let k = 5 end) in
-  let okadaElts5 = PartitionMonoid.generate g_temperleylieb in
-  print_int ()
+  List.iter print_seq sub_algebras1;
+
+  draw_diagram()
+
+(* let _ = *)
+(*     let module PartitionMonoid = Lib.Labelled.Make(struct let k = 2 end) in *)
+(*     let semigroup = PartitionMonoid.generate [S; P; B; Id] in *)
+(*     let lab_dimension = List.length semigroup in *)
+(*     List.iter (PartitionMonoid.print) semigroup; *)
+(*     Printf.printf "%i " (lab_dimension); *)
+(*     draw_diagram() *)
+(* let _ = *)
+(*   Printf.printf "\nsuite :\n"; *)
+(*   for k = 2 to 5 do *)
+(*     Printf.printf "%i " (Lib.Maths.binomial (4*k) (2*k) / (2*k+1)) *)
+(*   done *)
+
+
+(* let _ = *)
+(*   let module PartitionMonoid = Lib.Labelled.Make(struct let k = 4 end) in *)
+(*   let open PartitionMonoid in *)
+(*   (\* let el = (e 1 @ e 2 @ e 3) @ e 1 @ e 2 @ e 3 in *\) *)
+(*   (\* let el2 = e 3 @ e 2 @ e 1 @ e 3 @ e 2 @ e 1 in *\) *)
+(*   (\* let el = (e 1 @ e 2 @ e 1) @ e 3 in *\) *)
+(*   (\* let el2 = e 1 @ e 2 @ e 1 @ e 3 in *\) *)
+
+(*   let el = e 1 @(e 2 @ e 1 @ e 3) in *)
+(*   let el2 = (e 1 @ e 2 @ e 1) @ e 3 in *)
+
+(*   print el; *)
+(*   print el2; *)
+(*   draw_diagram() *)

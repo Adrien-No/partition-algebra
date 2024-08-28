@@ -3,6 +3,9 @@
 type generators =
   S | P | B | E | L | R | Id
 
+type diagram = cl list
+and cl = Unique of int | Few of int * int list (* we choose to keep single nodes in our structure *)
+
 module type t = sig
   type label
   type t

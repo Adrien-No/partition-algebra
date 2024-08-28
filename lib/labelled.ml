@@ -11,15 +11,28 @@ let print_ill l =
 
 (* auxiliar functions on Diagrams, used by functor Make *)
 
-type diagram = cl list
-and cl = Unique of int | Few of int * int list (* we choose to keep single nodes in our structure *)
+open Diagram
 
 module Utils = struct
   let map f =
     List.map (function Unique node -> Unique (f node) | Few (lab, l) -> Few (lab, List.map f l))
 
+  (* let filter f ll = *)
+  (*   List.map (function Unique node -> if f node then [Unique node] else [] *)
+  (*                    | Few(lab, l) -> *)
+  (*                      let l_filtered = List.filter f l in *)
+  (*                      if l_filtered <> [] then [Few(lab, l_filtered)] else []) ll |> List.filter ((<>)[]) *)
+  (* let filter_map f ll = *)
+  (*   map f ll *)
+  (*   |> filter ((<>)(-1)) *)
+  (*   |> map Option.get *)
+
   let sort (l: diagram) =
     List.map (function Unique node -> Unique node | Few (lab, l) -> Few (lab, List.fast_sort compare l)) l |> List.fast_sort compare (* un ordre total sur les diagrammes étiquetés *)
+
+  let normalize (l: diagram) =
+    let l = List.map (function Few (lab, l) -> Few (lab, List.sort compare l) | x -> x) l in
+    List.sort compare l
 end
 
 let diagram_counter = ref 0
@@ -112,7 +125,9 @@ module Make (P: sig val k : int end) = struct
     incr diagram_counter;
     Draw.dot_as_graph file g P.k
 
-  let to_string d =
+  let to_string ?(intern=false) d =
+    let d = if not intern then
+        Utils.map (Toolbox.externalize P.k) d else d in
     let cl_to_string = function
       | Unique node -> string_of_int node
       | Few (label, nodes) -> ("(" ^ string_of_int label ^ ") [" ^ (nodes |> List.map string_of_int |> String.concat "; ") ^ "]")
@@ -169,41 +184,58 @@ module Make (P: sig val k : int end) = struct
     (* [2] unify depending on b *)
     let uf = add_diagram_to_uf uf (Utils.map ((+)P.k) b) in
 
-    (* [3] extract C from uf *)
-    let c = ill_of_uf uf (3*P.k) in
+    (* [3] extract unlabelled C from uf. *)
+    (* we use an "unprocessed" state for nodes (shorted "up"), where : *)
+    (* elts a_i are 0..P.k-1, elts a_i\ *)
+    (*      b_i are P.k..2*P.k-1 *)
+    (*     b_i\ are 2*P.k..3*P.k-1 *)
+    let unlab_unprocessed_c = ill_of_uf uf (3*P.k) in
 
-    (* [4] compute diagram labels*)
-    (* Theses arrays stores labels of each elts of diagrams *)
-    let a_labels = Array.make (2*P.k) None in
-    List.iter (function
-        | Unique node -> a_labels.(node) <- Some (Toolbox.externalize P.k node |> abs)
-        | Few (lab, l) -> List.iter (fun x -> a_labels.(x) <- Some lab) l) a;
+    (* [4] labelize C *)
+    (* [4.1] storing the label of each node (max_int or default value if the node is lonely)*)
+    let a_labels = Array.make (2*P.k) max_int in
+    List.iter (function Few(lab, l) -> List.iter (fun i -> a_labels.(i) <- lab) l | _ -> ()) a;
+    let b_labels = Array.make (2*P.k) max_int in
+    List.iter (function Few(lab, l) -> List.iter (fun i -> b_labels.(i) <- lab) l | _ -> ()) b;
 
-    let b_labels = Array.make (2*P.k) None in
-    List.iter (function
-        | Unique node -> b_labels.(node) <- Some (Toolbox.externalize P.k node |> abs)
-        | Few (lab, l) -> List.iter (fun x -> b_labels.(x) <- Some lab) l) b;
-
-    (* print_ill c; *)
-    let c =
-      let rec loop l acc = (* we suppose that labels are in external form *)
-        match l with
-        | [] -> acc
-        | [node]::q when node < P.k   -> (* assert(Some node = a_labels.(node));  *)loop q (Unique (node)::acc)
-        | [node]::q when node < P.k*2 -> loop q acc
-        | [node]::q                   -> loop q (Unique (node-P.k)::acc)
-        | nodes ::q ->
-          let new_nodes_with_label = List.fold_left (fun (label, init) -> function
-              | node when node < P.k   -> law2 label ( (Option.get a_labels.(node))), node::init
-              | node when node < P.k*2 -> label, init
-              | node                   -> law2 label ( (Option.get b_labels.(node-P.k))), node-P.k::init
-            ) (P.k, []) nodes in
-          match new_nodes_with_label with
-          | _, []  -> loop q acc
-          | lab, [x] -> loop q (Unique x::acc)
-          | lab, l   -> loop q (Few (lab, l)::acc)
-      in
-      loop c []
+    (* [4.2] building c that is labelized *)
+    let process_node = (* goes from unprocessed node to final node *)
+      function
+      | n when n <   P.k -> Some n
+      | n when n < 2*P.k -> None
+      | n    (*n < 3*P.k*) -> Some (n-P.k)
+    in
+    let c_labels = Array.init (2*P.k) Fun.id in
+    (* let c_labels = Array.make (2*P.k) max_int in *)
+    List.iter (function [up_n] -> (* Unique up_n *) ()
+                      | [] -> failwith "can't be empty"
+                      | l ->
+                        let labels = List.map (fun node ->
+                            if      node < P.k then (* a_i *)
+                              a_labels.(node)
+                            else if node < 2*P.k then (* a_i\ or b_i *)
+                              min a_labels.(node) b_labels.(node-P.k)
+                            else (* b_i\ *)
+                              b_labels.(node-P.k)
+                          ) l
+                        in
+                        let lab = List.fold_left min max_int labels in
+                        List.iter (fun node ->
+                            if node < P.k then
+                              c_labels.(node) <- lab
+                            else if node < 2*P.k then
+                              ()
+                            else
+                              c_labels.(node-P.k) <- lab
+                          ) l
+      ) unlab_unprocessed_c;
+    let unlab_c = Unlabelled.Utils.filter_map process_node unlab_unprocessed_c in
+    let c = List.map (function
+        | [n] -> Unique n
+        | [] -> failwith "can't be empty"
+        | l -> assert (List.for_all ((=)c_labels.(List.hd l)) (List.map (fun i -> c_labels.(i)) l));
+          Few (c_labels.(List.hd l), l)
+      ) unlab_c
     in Utils.sort c
 
   let generator_builder i imax (f: int -> int list list) =
@@ -260,14 +292,21 @@ module Make (P: sig val k : int end) = struct
     | R -> r, P.k-1
     | Id -> (fun _ -> id), 1
 
-  let generate (gens: Diagram.generators list) =
+  let generate (gens': Diagram.generators list) =
     let open Diagram in
     let gens =
-      let generate_generators f imax = if imax >= 0 then List.init imax Int.succ |> List.map f else [] in
-      List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens))
+      let generate_generators f imax =
+        if imax >= 0 then List.init imax Int.succ |> List.map f
+        else []
+      in
+      List.concat (List.map (fun (f, imax) -> generate_generators f imax) (List.map get_generator gens'))
       |> List.map Utils.sort
     in
-    Generate_semigroup.make gens concat Utils.sort
+    (* Printf.printf "%i générateurs et id :\n" (List.length gens); *)
+    (* List.iter (fun p -> to_string p |> Printf.printf "%s\n") gens; *)
+    Generate_semigroup.make gens concat (* Utils.sort *) Utils.normalize to_string
+  (* Generate_semigroup.make3 (List.combine gens gens') concat *)
+  (* Generate_semigroup.make4 gens concat id *)
 
   let (===) = (=)
   let (@@@) = concat
@@ -335,9 +374,9 @@ let factorize_right (d: diagram) k = (* NOTE can really be optimized in term of 
       let sort_edge x y =
         if abs x < abs y then x, y else y, x
         (* min x y, max x y *)
-      (* if x < 0 && y > 0 then y, x *)
-      (* else if x > 0 && y < 0 then x, y *)
-      (* else failwith (Printf.sprintf "edge (%i, %i) can't be sorted" x y) *)
+        (* if x < 0 && y > 0 then y, x *)
+        (* else if x > 0 && y < 0 then x, y *)
+        (* else failwith (Printf.sprintf "edge (%i, %i) can't be sorted" x y) *)
       in
       let surge_edge = function
         | (lab, (src, dst)) when lab = ldes (* && src = -ldes && dst = -ldes *) -> (k, (k, -k))
