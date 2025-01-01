@@ -102,7 +102,7 @@ let print_seq (gens, name) =
   print_newline(); print_newline()
 
 let _ =
-  List.iter print_seq sub_algebras1;
+  List.iter print_seq [[E; Id], "okada"];
 
   draw_diagram()
 

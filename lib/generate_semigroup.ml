@@ -11,7 +11,6 @@ let sort_shapely (d: t) (d': t) =
 let generate_generators f imax = List.init imax Int.succ |> List.map f
 let gg = generate_generators
 
-
 (* on va essayer de forcer de partir de chacun des generateurs *) (* TODO perte de performances avec le type option ? *)
 let make1 (elts : 'a list) (concat : 'a -> 'a -> 'a) (normalize : 'a -> 'a) (to_string) : 'a list =
   let cache = Hashtbl.create (List.length elts) in
@@ -39,7 +38,6 @@ let make1 (elts : 'a list) (concat : 'a -> 'a -> 'a) (normalize : 'a -> 'a) (to_
   let l = Hashtbl.to_seq cache |> List.of_seq |> List.map fst |> List.sort sort_shapely in (* /!\ pas mettre de sort_uniq sinon on garde que les "classes diagrammes" (egaux à isomorphismes près) *)
   (* Printf.printf "taille de l : %i\n" (List.length l); *)
   l
-
 
 let make2 (gens: t list) (concat : t -> t -> t) (sort : t -> t) : t list =
   let cache = Hashtbl.create (List.length gens) in
@@ -91,4 +89,4 @@ let make4 gens concat id =
    (* assert(Hashtbl.length cache = List.length res); *)
    res
 
-let make = make1
+let make x y _ _ = make1 x y
