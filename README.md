@@ -19,7 +19,7 @@ make show
 ```
 to print diagrams all concatenated. 
 
-Make sure to include `ocaml draw_diagram()` at the end of your script in `bin/main.ml`.
+Make sure to include `draw_diagram()` at the end of your script in `bin/main.ml`.
 
 # warnings
 - few objects are incorrectly named (e.g "Okada" for labelled Partition, concatenation for a composition)
